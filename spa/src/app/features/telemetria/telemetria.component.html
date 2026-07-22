@@ -1,0 +1,51 @@
+<div class="telemetria-wrapper">
+  <div class="header-secao">
+    <h2>Health Dashboard & Telemetria</h2>
+    <p>Monitoramento em tempo real da infraestrutura e dos workers de extração.</p>
+  </div>
+
+  <div class="loading-state" *ngIf="telemetria() === undefined">
+    <i class="pi pi-spin pi-spinner"></i>
+  </div>
+
+  <div class="grid-telemetria" *ngIf="telemetria()">
+    <div class="card-metrica">
+      <div class="card-icon api"><i class="pi pi-bolt"></i></div>
+      <div class="card-info">
+        <h4>API .NET Core</h4>
+        <span class="status-badge" [ngClass]="telemetria().apiStatus === 'Online' ? 'ok' : 'error'">{{ telemetria().apiStatus }}</span>
+        <span class="detail">Uso de Memória: {{ telemetria().memoriaUsadaMb }} MB</span>
+      </div>
+    </div>
+
+    <div class="card-metrica">
+      <div class="card-icon db"><i class="pi pi-database"></i></div>
+      <div class="card-info">
+        <h4>SQL Server</h4>
+        <span class="status-badge" [ngClass]="telemetria().databaseStatus === 'Online' ? 'ok' : 'error'">{{ telemetria().databaseStatus }}</span>
+        <span class="detail">Franquias Indexadas: {{ telemetria().totalFranquiasMonitoradas }}</span>
+      </div>
+    </div>
+
+    <div class="card-metrica">
+      <div class="card-icon redis"><i class="pi pi-sitemap"></i></div>
+      <div class="card-info">
+        <h4>Redis Cache</h4>
+        <span class="status-badge" [ngClass]="telemetria().redisStatus === 'Online' ? 'ok' : 'error'">{{ telemetria().redisStatus }}</span>
+        <span class="detail">Backplane SignalR: Ativo</span>
+      </div>
+    </div>
+
+    <div class="card-metrica worker-status">
+      <div class="card-icon worker"><i class="pi pi-cog"></i></div>
+      <div class="card-info">
+        <h4>Worker Scraper</h4>
+        <span class="detail-highlight">Última Sincronização:</span>
+        <span class="detail time" *ngIf="telemetria().ultimaSincronizacaoWorker; else semSync">
+          {{ telemetria().ultimaSincronizacaoWorker | date:'dd/MM/yyyy HH:mm:ss' }}
+        </span>
+        <ng-template #semSync><span class="detail time">Nenhuma execução registrada</span></ng-template>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,13 @@
+<div class="toast-container" [class.show]="notificacao() !== null">
+  <div class="toast-content" *ngIf="notificacao()">
+    <div class="icon-wrapper">
+      <i class="pi pi-sync pi-spin" *ngIf="notificacao()?.tipoAtualizacao === 'Hype'"></i>
+      <i class="pi pi-shopping-cart" *ngIf="notificacao()?.tipoAtualizacao === 'Comercial'"></i>
+    </div>
+    <div class="text-wrapper">
+      <h4>Dados Atualizados</h4>
+      <p>O radar de <strong>{{ notificacao()?.nomeFranquia }}</strong> acabou de ser sincronizado.</p>
+    </div>
+    <button class="btn-close" (click)="fechar()"><i class="pi pi-times"></i></button>
+  </div>
+</div>

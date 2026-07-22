@@ -1,0 +1,30 @@
+<div class="comparador-wrapper">
+  <div class="header-secao">
+    <h2>Comparador de Franquias</h2>
+    <p>Coloque obras lado a lado para analisar Hype e Sentimento simultaneamente.</p>
+  </div>
+
+  <div class="input-area">
+    <input type="text" placeholder="ID da Obra A" [(ngModel)]="id1" class="input-dark">
+    <span class="vs-badge">VS</span>
+    <input type="text" placeholder="ID da Obra B" [(ngModel)]="id2" class="input-dark">
+    <button class="btn-comparar" (click)="comparar()">Analisar</button>
+  </div>
+
+  <div class="vs-grid" *ngIf="dados().length === 2">
+    <div class="vs-coluna" *ngFor="let d of dados()">
+      <img [src]="d.ImagemUrl" [alt]="d.Nome">
+      <h3>{{ d.Nome }}</h3>
+      
+      <div class="barra-box">
+        <span>Sentimento IA ({{ d.Sentimento }}%)</span>
+        <div class="barra-fundo"><div class="barra-preenchimento ai" [style.width.%]="d.Sentimento"></div></div>
+      </div>
+      
+      <div class="barra-box">
+        <span>Hype Score ({{ d.HypeScore | number:'1.0-1' }})</span>
+        <div class="barra-fundo"><div class="barra-preenchimento hype" [style.width.%]="d.HypeScore"></div></div>
+      </div>
+    </div>
+  </div>
+</div>

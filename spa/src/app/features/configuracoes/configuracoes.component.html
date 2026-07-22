@@ -1,0 +1,60 @@
+<div class="config-wrapper">
+  <div class="header-secao">
+    <h2>Control Plane: Workers & Scrapers</h2>
+    <p>Gerencie a cadência de extração de dados e o comportamento dos processos em background.</p>
+  </div>
+
+  <div class="config-card">
+    <div class="card-header">
+      <i class="pi pi-amazon"></i>
+      <h3>Amazon BSR Scraper</h3>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group toggle-group">
+        <label class="switch">
+          <input type="checkbox" [(ngModel)]="config().amazonScraperAtivo">
+          <span class="slider round"></span>
+        </label>
+        <div class="toggle-info">
+          <h4>Status do Scraper (Kill Switch)</h4>
+          <span>Habilita ou desabilita completamente a varredura da Amazon.</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Intervalo Base (Minutos): {{ config().intervaloBaseMinutos }}m</label>
+        <input type="range" min="60" max="1440" step="30" [(ngModel)]="config().intervaloBaseMinutos" [disabled]="!config().amazonScraperAtivo">
+        <span class="helper-text">Padrão em semanas comuns (Recomendado: 240m a 480m).</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-group toggle-group promo-mode">
+        <label class="switch">
+          <input type="checkbox" [(ngModel)]="config().modoPromocaoAtivo" [disabled]="!config().amazonScraperAtivo">
+          <span class="slider round promo"></span>
+        </label>
+        <div class="toggle-info">
+          <h4 class="promo-text">Modo Turbo (Sazonal/Promoções)</h4>
+          <span>Substitui o intervalo base durante eventos como Black Friday ou lançamentos.</span>
+        </div>
+      </div>
+
+      <div class="form-group" [class.disabled]="!config().modoPromocaoAtivo || !config().amazonScraperAtivo">
+        <label>Intervalo Promocional (Minutos): {{ config().intervaloPromocaoMinutos }}m</label>
+        <input type="range" min="15" max="120" step="15" [(ngModel)]="config().intervaloPromocaoMinutos" [disabled]="!config().modoPromocaoAtivo || !config().amazonScraperAtivo">
+        <span class="helper-text">Cadência agressiva para captura de preços voláteis.</span>
+      </div>
+    </div>
+
+    <div class="action-footer">
+      <span class="feedback-msg" [class.success]="saveMessage().includes('sucesso')">{{ saveMessage() }}</span>
+      <button class="btn-save" (click)="salvarConfiguracoes()" [disabled]="isSaving()">
+        <i class="pi pi-check" *ngIf="!isSaving()"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="isSaving()"></i>
+        {{ isSaving() ? 'Aplicando...' : 'Aplicar Configurações' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+---
+title: ADR - Reestruturação Arquitetural, Padronização e Integração de IA Generativa
+description: Architecture Decision Record sobre as mudanças para Feature-Based Architecture, Vertical Slices, Padrões Kebab-case e Motor Qwen 2.5.
+---
+
+# Architecture Decision Record: Reestruturação Arquitetural e Motor LLM
+
+## Status
+Aceito
+
+## Contexto
+O projeto cresceu rapidamente em complexidade. O acúmulo de regras no `Program.cs` (.NET) e a dispersão dos componentes Angular demandavam uma padronização madura de engenharia. Além disso, havia a necessidade de integrar a Inteligência Artificial Generativa localmente para sumarizar o vasto volume analítico obtido sem depender de APIs externas pagas.
+
+## Decisão
+
+1. **Padronização Kebab-Case**: As pastas raízes do projeto foram forçadas ao padrão kebab-case (`api`, `worker`, `spa`, `llm-service`, `nlp-service`) visando total harmonia com orquestradores (Docker Compose) e CI/CD. O `RadarTendencias.slnx` absorveu essas mudanças nos paths dos sub-projetos C#.
+
+2. **Feature-Based e Modernização no Angular (Frontend)**: O app mudou para uma separação restrita em `/core`, `/shared` e `/features`. Adotou-se pesadamente o `RxJS Interop` com injeção de `Signals` para eliminar `subscribe()` nativo e prevenir memory leaks. Ferramentas de Linting (ESLint Flat Config + Prettier) foram incorporadas e engatilhadas por pré-commits (Husky + lint-staged).
+
+3. **Vertical Slice Architecture e JWT (.NET Backend)**: Migramos de camadas anêmicas para Slices encapsulados. Toda a injeção do monolítico `Program.cs` migrou para métodos de extensão auto-contidos (`DependencyInjection.cs`, `FranquiasEndpoints.cs`), mantendo roteamento modular por meio de CQRS e MediatR. O endpoint agora é protegido pelo padrão multi-tenancy JWT.
+
+4. **Microsserviço Qwen 2.5 (IA Generativa)**: Foi provisionado um nó Docker local rodando Python + FastAPI sob o modelo `Qwen/Qwen2.5-1.5B-Instruct`. Este nó se encarrega de deglutir nuvens de palavras, métricas de Hype e de Sentimentos provenientes do backend, destilando textos analíticos diretos sem restrições sistêmicas (Total Privacidade de Dados).
+
+## Consequências
+- **Positivas:** Redução monumental do acoplamento C#; Manutenibilidade Angular expandida graças à Feature-Based; IA Executiva rodando de forma soberana (Zero-cost token cloud).
+- **Negativas:** Exigência massiva de RAM local, devendo alocar paralelamente o SQL, Redis, NLP Pipeline (XLM-RoBERTa) e a rede generativa Qwen 2.5; Maior curva de barreira de entrada aos contribuidores do repositório devido a injeções em extensões e Signals.

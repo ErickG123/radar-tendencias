@@ -1,0 +1,31 @@
+<div class="discovery-wrapper">
+  <div class="header-secao">
+    <h2>Smart Discovery</h2>
+    <p>Encontre joias ocultas ou valide obras pelo filtro de IA.</p>
+  </div>
+  
+  <div class="filtros-card">
+    <div class="form-group">
+      <label>Sentimento Mínimo (IA): {{ minSentimento() }}%</label>
+      <input type="range" min="0" max="100" [(ngModel)]="minSentimento">
+    </div>
+    <div class="form-group">
+      <label>Hype Máximo Permitido: {{ maxHype() }}</label>
+      <input type="range" min="0" max="100" [(ngModel)]="maxHype">
+    </div>
+    <button class="btn-buscar" (click)="buscar()"><i class="pi pi-search"></i> Explorar</button>
+  </div>
+
+  <div class="loading-state" *ngIf="isCarregando()"><i class="pi pi-spin pi-spinner"></i></div>
+
+  <div class="resultados-grid" *ngIf="!isCarregando() && resultados().length > 0">
+    <a *ngFor="let item of resultados()" [routerLink]="['/franquia', item.FranquiaID]" class="franquia-card">
+      <img [src]="item.ImagemUrl" [alt]="item.Nome" />
+      <div class="card-info">
+        <h4>{{ item.Nome }}</h4>
+        <span class="badge ai">Sentimento: {{ item.SentimentoPositivo }}%</span>
+        <span class="badge hype">Hype: {{ item.HypeScore | number:'1.0-1' }}</span>
+      </div>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+---
+title: ADR - Nuvem de Palavras e NLP
+description: Architecture Decision Record sobre a implementação de nuvem de palavras via processamento de linguagem natural (NLP).
+---
+
+# Architecture Decision Record: Nuvem de Palavras e NLP
+
+## Status
+Aceito
+
+## Contexto
+Era necessário extrair os tópicos e termos mais relevantes falados pela comunidade a respeito de uma obra e agrupá-los de forma visual e intuitiva no frontend, permitindo ao usuário entender rapidamente o sentimento geral e o contexto das discussões.
+
+## Decisão
+Foi adicionado um endpoint de extração de palavras-chave (`/extract-keywords`) no microsserviço Python (`RadarTendencias.NLP`). Ele faz a limpeza textual, remoção de stop words, contagem de recorrência e classificação de sentimento individual por termo utilizando modelos Hugging Face (transformers).
+O SQL Server armazena o resultado processado em JSON no campo `NuvemPalavras` da tabela `MonitoramentoHype`.
+No frontend Angular, o controle visual de dimensionamento e colorização (`positive`, `negative`, `neutral`) é processado reativamente através de Signals baseando-se no `weight` de cada termo.
+
+## Consequências
+- **Positivas:** Agilidade na interpretação dos dados coletados da web. Identificação visual imediata dos pontos positivos e negativos citados pelo público.
+- **Negativas:** Maior custo computacional no microsserviço Python para gerar a inferência em nível de termo na etapa de análise de sentenças.

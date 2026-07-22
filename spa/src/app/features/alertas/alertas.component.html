@@ -1,0 +1,37 @@
+<div class="alertas-wrapper">
+  <div class="header-secao">
+    <h2>Triggers e Alertas Customizados</h2>
+    <p>Configure regras para ser notificado quando obras atingirem picos de hype ou quedas de sentimento.</p>
+  </div>
+
+  <div class="form-alerta-card">
+    <h3>Criar Novo Gatilho</h3>
+    <div class="form-row">
+      <input type="number" placeholder="ID da Franquia" [(ngModel)]="novoAlerta().franquiaId" class="input-base">
+      
+      <select [(ngModel)]="novoAlerta().tipoMetrica" class="input-base">
+        <option value="Hype">Hype Score</option>
+        <option value="Sentimento">Sentimento IA</option>
+      </select>
+
+      <select [(ngModel)]="novoAlerta().condicao" class="input-base">
+        <option value="Maior">For Maior que (>)</option>
+        <option value="Menor">For Menor que (<)</option>
+      </select>
+
+      <input type="number" placeholder="Valor" [(ngModel)]="novoAlerta().valorAlvo" class="input-base short">
+      
+      <button class="btn-salvar" (click)="salvarAlerta()"><i class="pi pi-plus"></i> Adicionar</button>
+    </div>
+  </div>
+
+  <div class="grid-alertas">
+    <div class="alerta-card" *ngFor="let alerta of alertas()">
+      <div class="alerta-info">
+        <h4>{{ alerta.NomeFranquia }}</h4>
+        <p>Avisar se <strong>{{ alerta.TipoMetrica }}</strong> {{ alerta.Condicao === 'Maior' ? '>' : '<' }} <strong>{{ alerta.ValorAlvo }}</strong></p>
+      </div>
+      <button class="btn-excluir" (click)="excluirAlerta(alerta.AlertaID)"><i class="pi pi-trash"></i></button>
+    </div>
+  </div>
+</div>
