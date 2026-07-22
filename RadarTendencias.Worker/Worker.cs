@@ -83,6 +83,27 @@ public class Worker : BackgroundService
             {
                 if (categoriaId == 1 || categoriaId == 3)
                 {
+                    using var anilistClient = new HttpClient();
+                    anilistClient.BaseAddress = new Uri("https://graphql.anilist.co");
+                    
+                    var queryGraphql = new {
+                        query = @"query ($mediaId: Int) { Page(perPage: 3) { threads(mediaId: $mediaId, sort: [REPLIES_DESC]) { title body } } }",
+                        variables = new { mediaId = externalId.Value }
+                    };
+
+                    var anilistRes = await anilistClient.PostAsJsonAsync("", queryGraphql, stoppingToken);
+                    if (anilistRes.IsSuccessStatusCode)
+                    {
+                        var anilistData = await anilistRes.Content.ReadFromJsonAsync<AnilistThreadsResponse>(cancellationToken: stoppingToken);
+                        if (anilistData?.Data?.Page?.Threads != null)
+                        {
+                            textos.AddRange(anilistData.Data.Page.Threads.Select(t => $"{t.Title} {t.Body}"));
+                        }
+                    }
+                }
+
+                if (categoriaId == 1 || categoriaId == 3)
+                {
                     var jikanClient = _httpClientFactory.CreateClient("JikanClient");
                     var tipo = categoriaId == 1 ? "anime" : "manga";
                     var jikanResponse = await jikanClient.GetFromJsonAsync<JikanReviewsResponse>($"{tipo}/{externalId}/reviews", stoppingToken);
@@ -254,3 +275,8 @@ public class YoutubeSearchResponse { [JsonPropertyName("items")] public List<You
 public class YoutubeItem { [JsonPropertyName("id")] public YoutubeId? Id { get; set; } [JsonPropertyName("snippet")] public YoutubeSnippet? Snippet { get; set; } }
 public class YoutubeId { [JsonPropertyName("videoId")] public string? VideoId { get; set; } }
 public class YoutubeSnippet { [JsonPropertyName("title")] public string? Title { get; set; } [JsonPropertyName("description")] public string? Description { get; set; } [JsonPropertyName("channelTitle")] public string? ChannelTitle { get; set; } }
+
+public class AnilistThreadsResponse { [System.Text.Json.Serialization.JsonPropertyName("data")] public AnilistThreadsData? Data { get; set; } }
+public class AnilistThreadsData { [System.Text.Json.Serialization.JsonPropertyName("Page")] public AnilistThreadsPage? Page { get; set; } }
+public class AnilistThreadsPage { [System.Text.Json.Serialization.JsonPropertyName("threads")] public List<AnilistThreadItem>? Threads { get; set; } }
+public class AnilistThreadItem { [System.Text.Json.Serialization.JsonPropertyName("title")] public string? Title { get; set; } [System.Text.Json.Serialization.JsonPropertyName("body")] public string? Body { get; set; } }

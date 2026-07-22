@@ -143,7 +143,8 @@ app.MapGet("/pesquisa", async (IConfiguration config, IHttpClientFactory httpCli
                     ExternalID = a.MalId, 
                     Sinopse = a.Synopsis, 
                     ImagemUrl = a.Images?.Jpg?.ImageUrl, 
-                    ScoreInicial = a.Score 
+                    ScoreInicial = a.Score,
+                    Fonte = "MyAnimeList"
                 });
             }
             jikanSucesso = true;
@@ -184,7 +185,8 @@ app.MapGet("/pesquisa", async (IConfiguration config, IHttpClientFactory httpCli
                             ExternalID = media.Id,
                             Sinopse = media.Description,
                             ImagemUrl = media.CoverImage?.Large,
-                            ScoreInicial = media.AverageScore.HasValue ? media.AverageScore.Value / 10.0 : 0
+                            ScoreInicial = media.AverageScore.HasValue ? media.AverageScore.Value / 10.0 : 0,
+                            Fonte = "AniList"
                         });
                     }
                 }
@@ -208,7 +210,8 @@ app.MapGet("/pesquisa", async (IConfiguration config, IHttpClientFactory httpCli
                     ExternalID = m.MalId, 
                     Sinopse = m.Synopsis, 
                     ImagemUrl = m.Images?.Jpg?.ImageUrl, 
-                    ScoreInicial = m.Score 
+                    ScoreInicial = m.Score,
+                    Fonte = "MyAnimeList (Mangá)"
                 });
             }
         }
@@ -231,7 +234,8 @@ app.MapGet("/pesquisa", async (IConfiguration config, IHttpClientFactory httpCli
                     ExternalID = t.Id, 
                     Sinopse = t.Overview, 
                     ImagemUrl = !string.IsNullOrEmpty(t.PosterPath) ? $"https://image.tmdb.org/t/p/w500{t.PosterPath}" : null, 
-                    ScoreInicial = t.VoteAverage 
+                    ScoreInicial = t.VoteAverage,
+                    Fonte = "TMDB"
                 });
             }
         }
@@ -272,10 +276,10 @@ app.MapGet("/pesquisa", async (IConfiguration config, IHttpClientFactory httpCli
             await connection.ExecuteAsync("UPDATE Franquias SET ExternalID = @ExternalID, Sinopse = @Sinopse, ImagemUrl = @ImagemUrl WHERE FranquiaID = @id", new { dto.ExternalID, dto.Sinopse, dto.ImagemUrl, id });
         }
         
-        resultados.Add(new { FranquiaID = id, Nome = dto.Nome, CategoriaID = dto.CategoriaID, ImagemUrl = dto.ImagemUrl, Tags = dto.Tags });
+        resultados.Add(new { FranquiaID = id, Nome = dto.Nome, CategoriaID = dto.CategoriaID, ImagemUrl = dto.ImagemUrl, Tags = dto.Tags, Fonte = dto.Fonte });
     }
 
-    return Results.Ok(resultados.OrderBy(r => ((dynamic)r).CategoriaID).ToList());
+    return Results.Ok(resultados);
 });
 
 app.MapGet("/franquias/{id}/detalhes", async (IConfiguration config, int id) =>
@@ -481,10 +485,108 @@ app.MapPut("/alertas/{id}/ler", async (IConfiguration config, int id) =>
     return Results.NoContent();
 });
 
+using (var scope = app.Services.CreateScope())
+{
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    using (var connection = new SqlConnection(config.GetConnectionString("DefaultConnection")))
+    {
+        var sqlCreateTable = @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Favoritos')
+            BEGIN
+                CREATE TABLE Favoritos (
+                    FavoritoID INT IDENTITY(1,1) PRIMARY KEY,
+                    FranquiaID INT NOT NULL FOREIGN KEY REFERENCES Franquias(FranquiaID) ON DELETE CASCADE,
+                    DataAdicao DATETIME DEFAULT GETDATE(),
+                    CONSTRAINT UQ_Favoritos_Franquia UNIQUE (FranquiaID)
+                );
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Notificacoes')
+            BEGIN
+                CREATE TABLE Notificacoes (
+                    NotificacaoID INT IDENTITY(1,1) PRIMARY KEY,
+                    FranquiaID INT NULL FOREIGN KEY REFERENCES Franquias(FranquiaID) ON DELETE SET NULL,
+                    Titulo VARCHAR(200) NOT NULL,
+                    Mensagem VARCHAR(MAX) NOT NULL,
+                    Lida BIT DEFAULT 0,
+                    DataCriacao DATETIME DEFAULT GETDATE()
+                );
+            END";
+        await connection.ExecuteAsync(sqlCreateTable);
+    }
+}
+
+app.MapGet("/favoritos", async (IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sql = @"
+        SELECT f.FranquiaID, f.Nome, f.CategoriaID, f.ImagemUrl, fav.DataAdicao, m.HypeScore, m.SentimentoPositivo,
+               (SELECT STRING_AGG(t.Nome, ', ') FROM FranquiaTags ft INNER JOIN Tags t ON ft.TagID = t.TagID WHERE ft.FranquiaID = f.FranquiaID) as TagsString
+        FROM Favoritos fav
+        INNER JOIN Franquias f ON fav.FranquiaID = f.FranquiaID
+        LEFT JOIN (
+            SELECT FranquiaID, HypeScore, SentimentoPositivo,
+                   ROW_NUMBER() OVER(PARTITION BY FranquiaID ORDER BY DataMedicao DESC) as rn
+            FROM MonitoramentoHype
+        ) m ON m.FranquiaID = f.FranquiaID AND m.rn = 1
+        ORDER BY fav.DataAdicao DESC";
+    
+    var favoritos = await connection.QueryAsync(sql);
+    return Results.Ok(favoritos);
+});
+
+app.MapPost("/favoritos/toggle/{franquiaId}", async (int franquiaId, IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sqlCheck = "SELECT COUNT(1) FROM Favoritos WHERE FranquiaID = @FranquiaID";
+    var existe = await connection.ExecuteScalarAsync<int>(sqlCheck, new { FranquiaID = franquiaId });
+
+    if (existe > 0)
+    {
+        await connection.ExecuteAsync("DELETE FROM Favoritos WHERE FranquiaID = @FranquiaID", new { FranquiaID = franquiaId });
+        return Results.Ok(new { Favorito = false, Mensagem = "Removido da Watchlist" });
+    }
+    else
+    {
+        await connection.ExecuteAsync("INSERT INTO Favoritos (FranquiaID) VALUES (@FranquiaID)", new { FranquiaID = franquiaId });
+        return Results.Ok(new { Favorito = true, Mensagem = "Adicionado à Watchlist" });
+    }
+});
+
+app.MapGet("/favoritos/check/{franquiaId}", async (int franquiaId, IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sql = "SELECT COUNT(1) FROM Favoritos WHERE FranquiaID = @FranquiaID";
+    var existe = await connection.ExecuteScalarAsync<int>(sql, new { FranquiaID = franquiaId });
+    return Results.Ok(new { Favorito = existe > 0 });
+});
+
+app.MapGet("/notificacoes", async (IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sql = "SELECT NotificacaoID, FranquiaID, Titulo, Mensagem, Lida, DataCriacao FROM Notificacoes ORDER BY DataCriacao DESC";
+    var dados = await connection.QueryAsync(sql);
+    return Results.Ok(dados);
+});
+
+app.MapPatch("/notificacoes/{id}/ler", async (int id, IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    await connection.ExecuteAsync("UPDATE Notificacoes SET Lida = 1 WHERE NotificacaoID = @Id", new { Id = id });
+    return Results.Ok(new { Sucesso = true });
+});
+
+app.MapDelete("/notificacoes/{id}", async (int id, IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    await connection.ExecuteAsync("DELETE FROM Notificacoes WHERE NotificacaoID = @Id", new { Id = id });
+    return Results.Ok(new { Sucesso = true });
+});
+
 app.Run();
 
 public class MonitoramentoDTO { public int FranquiaID { get; set; } public decimal HypeScore { get; set; } public int VolumeMencoes { get; set; } public decimal SentimentoPositivo { get; set; } }
-public class SyncFranquiaDTO { public string Nome { get; set; } = string.Empty; public int CategoriaID { get; set; } public List<string> Tags { get; set; } = new(); public int? ExternalID { get; set; } public string? Sinopse { get; set; } public string? ImagemUrl { get; set; } public double? ScoreInicial { get; set; } }
+public class SyncFranquiaDTO { public string Nome { get; set; } = string.Empty; public int CategoriaID { get; set; } public List<string> Tags { get; set; } = new(); public int? ExternalID { get; set; } public string? Sinopse { get; set; } public string? ImagemUrl { get; set; } public double? ScoreInicial { get; set; } public string Fonte { get; set; } = "Desconhecida"; }
 public class FluxoDTO { public int FluxoID { get; set; } public string Nome { get; set; } = string.Empty; public List<NodeDTO> Nodes { get; set; } = new(); public List<ConnectionDTO> Connections { get; set; } = new(); }
 public class NodeDTO { public string NodeID { get; set; } = string.Empty; public string Tipo { get; set; } = string.Empty; public string Label { get; set; } = string.Empty; public int PosX { get; set; } public int PosY { get; set; } }
 public class ConnectionDTO { public string ConnectionID { get; set; } = string.Empty; public string SourceNodeID { get; set; } = string.Empty; public string SourcePortID { get; set; } = string.Empty; public string TargetNodeID { get; set; } = string.Empty; public string TargetPortID { get; set; } = string.Empty; }
@@ -526,3 +628,15 @@ public class AnilistPage { [System.Text.Json.Serialization.JsonPropertyName("med
 public class AnilistMedia { [System.Text.Json.Serialization.JsonPropertyName("id")] public int Id { get; set; } [System.Text.Json.Serialization.JsonPropertyName("title")] public AnilistTitle? Title { get; set; } [System.Text.Json.Serialization.JsonPropertyName("coverImage")] public AnilistCoverImage? CoverImage { get; set; } [System.Text.Json.Serialization.JsonPropertyName("description")] public string? Description { get; set; } [System.Text.Json.Serialization.JsonPropertyName("genres")] public List<string>? Genres { get; set; } [System.Text.Json.Serialization.JsonPropertyName("averageScore")] public double? AverageScore { get; set; } }
 public class AnilistTitle { [System.Text.Json.Serialization.JsonPropertyName("romaji")] public string? Romaji { get; set; } [System.Text.Json.Serialization.JsonPropertyName("english")] public string? English { get; set; } }
 public class AnilistCoverImage { [System.Text.Json.Serialization.JsonPropertyName("large")] public string? Large { get; set; } }
+
+public class AnilistSeasonResponse { [System.Text.Json.Serialization.JsonPropertyName("data")] public AnilistSeasonData? Data { get; set; } }
+public class AnilistSeasonData { [System.Text.Json.Serialization.JsonPropertyName("Page")] public AnilistSeasonPage? Page { get; set; } }
+public class AnilistSeasonPage { [System.Text.Json.Serialization.JsonPropertyName("media")] public List<AnilistSeasonMedia>? Media { get; set; } }
+public class AnilistSeasonMedia { [System.Text.Json.Serialization.JsonPropertyName("id")] public int Id { get; set; } [System.Text.Json.Serialization.JsonPropertyName("title")] public AnilistTitle? Title { get; set; } [System.Text.Json.Serialization.JsonPropertyName("coverImage")] public AnilistCoverImage? CoverImage { get; set; } [System.Text.Json.Serialization.JsonPropertyName("popularity")] public int Popularity { get; set; } [System.Text.Json.Serialization.JsonPropertyName("averageScore")] public double? AverageScore { get; set; } [System.Text.Json.Serialization.JsonPropertyName("trending")] public int Trending { get; set; } [System.Text.Json.Serialization.JsonPropertyName("genres")] public List<string>? Genres { get; set; } }
+
+public class AnilistRelationsResponse { [System.Text.Json.Serialization.JsonPropertyName("data")] public AnilistRelationsData? Data { get; set; } }
+public class AnilistRelationsData { [System.Text.Json.Serialization.JsonPropertyName("Media")] public AnilistMediaRelations? Media { get; set; } }
+public class AnilistMediaRelations { [System.Text.Json.Serialization.JsonPropertyName("relations")] public AnilistRelationsContainer? Relations { get; set; } }
+public class AnilistRelationsContainer { [System.Text.Json.Serialization.JsonPropertyName("edges")] public List<AnilistRelationEdge>? Edges { get; set; } }
+public class AnilistRelationEdge { [System.Text.Json.Serialization.JsonPropertyName("relationType")] public string? RelationType { get; set; } [System.Text.Json.Serialization.JsonPropertyName("node")] public AnilistRelationNode? Node { get; set; } }
+public class AnilistRelationNode { [System.Text.Json.Serialization.JsonPropertyName("id")] public int Id { get; set; } [System.Text.Json.Serialization.JsonPropertyName("title")] public AnilistTitle? Title { get; set; } [System.Text.Json.Serialization.JsonPropertyName("type")] public string? Type { get; set; } [System.Text.Json.Serialization.JsonPropertyName("coverImage")] public AnilistCoverImage? CoverImage { get; set; } }

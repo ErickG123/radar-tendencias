@@ -1,0 +1,22 @@
+---
+title: "ADR 012: Expansão do AniList GraphQL (Threads & Relations)"
+description: "Adoção do GraphQL do AniList para extração de fóruns/threads comunitários no pipeline NLP e mapeamento de genealogia (sequências/prequelas) de franquias."
+---
+
+# ADR 012: Expansão do AniList GraphQL (Threads & Relations)
+
+## Contexto
+
+Embora já utilizássemos APIs REST como Jikan e TMDB, extrair opiniões comunitárias aprofundadas estava dependente do Reddit e do YouTube. A comunidade otaku (animes e mangás) engaja fortemente nos fóruns do AniList. Além disso, mapear a "Timeline" (Genealogia) de franquias de animes via Jikan rest demandava _fetches_ em cascata não performáticos.
+
+## Decisão
+
+Optamos por integrar consultas robustas através do endpoint GraphQL da AniList (`https://graphql.anilist.co`). 
+1. **No Worker (NLP Pipeline):** Incluímos uma _query_ para capturar os Títulos e os Corpos das 3 *Threads* (Fóruns) mais populares (`sort: [REPLIES_DESC]`) de cada anime/mangá. Esses textos são concatenados aos dados do Reddit e despachados para a IA de NLP avaliar o Sentimento.
+2. **Na API (.NET):** Criou-se o endpoint dinâmico `/franquias/{id}/relacoes`, onde uma _query_ GraphQL busca a árvore da `Media` e explora os `relations.edges` para retornar sequências, prequelas e spin-offs.
+
+## Consequências
+
+- **Sentimento mais Preciso:** Enviar conversas completas de nicho (Threads AniList) ao modelo `bert-base-multilingual-uncased-sentiment` aumentou brutalmente a acurácia do Hype.
+- **UI Enriquecida:** O Frontend agora exibe as conexões diretas entre obras, estimulando a navegação encadeada pelo usuário na nova seção de "Mídias Derivadas".
+- **Baixa Latência:** Por ser GraphQL, trazemos exatamente os campos que queremos da Árvore de Relações (`coverImage.large`, `type`, `relationType`), poupando banda.

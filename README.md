@@ -51,10 +51,12 @@ O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 ## ✨ Features Principais
 
 - 🔍 **Busca Universal Dinâmica:** Motor de busca que unifica resultados de Animes (Jikan/MyAnimeList), Mangás (Jikan) e Filmes/Séries (TMDB).
-- 🧠 **Análise de Sentimento (IA):** Pipeline local rodando NLP (Hugging Face) para varrer críticas no Reddit, MyAnimeList, TMDB e YouTube.
+- 🧠 **Análise de Sentimento (IA):** Pipeline local rodando NLP (Hugging Face) para varrer críticas no Reddit, MyAnimeList, TMDB, YouTube e Threads do AniList.
 - 📈 **Gráficos de Hype Histórico:** Painel visual na UI que rastreia a elevação (ou queda) de popularidade de uma obra através dos dias.
-- 🎭 **Voz da Comunidade:** Uma timeline interativa (Feed) contendo resenhas, posts de redes sociais e reviews de YouTube sobre a franquia.
+- 📅 **Análise Sazonal:** Dashboard de temporadas identificando blockbusters e joias ocultas baseadas em engajamento.
+- 🎭 **Voz da Comunidade & Relações:** Timeline interativa contendo resenhas da comunidade e navegação de prequelas/sequências derivadas.
 - ⚙️ **Configuração de Alertas (Node-Based):** Uma interface arrastar-e-soltar (Flow) para criar regras (Ex: Se Sentimento > 80, dispare Notificação).
+- 📌 **Watchlist & Notificações:** Área pessoal para monitoramento de Hype Score em tempo real e Central de Alertas integrada.
 
 ## 🛠 Tecnologias
 

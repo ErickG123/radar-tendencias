@@ -1,0 +1,23 @@
+---
+title: "ADR 011: Módulos de Watchlist e Central de Alertas"
+description: "Implementação de tabelas locais no SQL Server para gestão de Favoritos (Watchlist) e envio de Notificações ao usuário a partir do Motor de Regras."
+---
+
+# ADR 011: Módulos de Watchlist e Central de Alertas
+
+## Contexto
+
+À medida que o **Radar de Tendências** se expandiu, os usuários sentiram a necessidade de rastrear métricas (Hype Score e Sentimento) de franquias específicas. Adicionalmente, o **Motor de Regras Node-Based** precisava de um destino para disparar os eventos quando condições (como alta abrupta de Sentimento) fossem alcançadas.
+
+## Decisão
+
+Foi decidido criar dois módulos acoplados usando nosso banco de dados relacional (SQL Server):
+1. **Watchlist (Favoritos):** Tabela `Favoritos` vinculando o ID da Franquia de forma única. A interface em Angular fornece um feed personalizado onde cada item puxa em tempo real a última medição de métrica da tabela `MonitoramentoHype`.
+2. **Central de Notificações:** Tabela `Notificacoes` (opcionalmente ligada a uma Franquia) com metadados como Título, Mensagem e Status de Leitura (Lida). 
+
+O Backend Minimal API do .NET orquestra o CRUD de ambas as frentes. A UI Angular utiliza `Signals` fortemente para otimizar os fluxos reativos de marcar notificações como lidas ou realizar _toggles_ de Favoritos instantaneamente nas páginas de detalhes.
+
+## Consequências
+
+- **Melhor Retenção de Usuário:** Ao criar uma área pessoal, garantimos que o sistema evoluiu de uma simples plataforma de pesquisa para um Tracker avançado.
+- **Ação Rápida:** A adoção do _patch_ para marcação de leitura agiliza requisições sem _payloads_ complexos, mantendo a responsividade do Frontend instantânea com Signals.
