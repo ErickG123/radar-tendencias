@@ -15,10 +15,11 @@
 
   <p align="center">
     <img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet" alt=".NET 10" />
-    <img src="https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular 21" />
+    <img src="https://img.shields.io/badge/Angular-21-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular 21" />
     <img src="https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.11" />
     <img src="https://img.shields.io/badge/SQL_Server-2022-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white" alt="SQL Server 2022" />
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+    <img src="https://img.shields.io/badge/AniList-GraphQL-02A9FF?style=for-the-badge&logo=graphql&logoColor=white" alt="AniList GraphQL" />
   </p>
 </div>
 
@@ -29,50 +30,87 @@
     <li><a href="#-arquitetura">Arquitetura</a></li>
     <li><a href="#-features">Features Principais</a></li>
     <li><a href="#-tecnologias">Tecnologias</a></li>
+    <li><a href="#-endpoints-da-api">Endpoints da API</a></li>
     <li><a href="#-como-executar">Como Executar</a></li>
   </ol>
 </details>
 
 ## 📖 Sobre o Projeto
 
-O **Radar de Tendências** é um ecossistema projetado para cruzar dados estáticos de catálogos de entretenimento com o engajamento orgânico de comunidades digitais. 
+O **Radar de Tendências** é um ecossistema projetado para cruzar dados estáticos de catálogos de entretenimento com o engajamento orgânico de comunidades digitais.
 
-Através da integração com múltiplas fontes (Reddit, YouTube, Jikan e TMDB), o sistema processa textos de reviews, comentários e sinopses e os submete a um **Motor de Inteligência Artificial Local (NLP)** rodando um modelo transformer da Hugging Face (`bert-base-multilingual-uncased-sentiment`). Com base nesses dados, o sistema calcula um **Hype Score** (termômetro de popularidade) e um **Score de Sentimento** (positivo/negativo/neutro).
+Através da integração com múltiplas fontes (Reddit, YouTube, Jikan/MAL, TMDB e AniList GraphQL), o sistema processa textos de reviews, comentários, threads de fórum e sinopses, submetendo-os a um **Motor de Inteligência Artificial Local (NLP)** rodando um modelo transformer da Hugging Face (`cardiffnlp/twitter-xlm-roberta-base-sentiment`). Com base nesses dados, calcula um **Hype Score**, um **Score de Sentimento** e gera um **Resumo Executivo (Slang-Aware)** contextualizado para a cultura de fandom.
 
 ## 🏗 Arquitetura
 
 O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 
-- **API Core (.NET 10):** Minimal API de altíssima performance estruturada com `Dapper`. Responsável por servir dados ao Frontend, consultar bancos e realizar as buscas externas *In-Memory*.
-- **Worker Service (.NET 10):** Job em *background* responsável por sincronizar as avaliações das comunidades externas e enviar requisições loteadas para o NLP Service, garantindo a atualização assíncrona do "Hype Score".
-- **NLP Service (Python):** Microsserviço construído com `FastAPI` e a biblioteca `transformers`. Executa as análises de Sentimento multilinguais em tempo real utilizando poder computacional local, sem dependência de LLMs comerciais.
-- **Frontend App (Angular):** Aplicação Single Page fluida que consome os dados e plota gráficos analíticos de forma rica, desenvolvida com `Standalone Components` e `Signals`.
+- **API Core (.NET 10):** Minimal API de altíssima performance estruturada com **CQRS (MediatR)** e `Dapper` utilizando *Vertical Slice Architecture*. Responsável por orquestrar dados ao Frontend, gerenciar banco de dados e realizar buscas externas.
+- **Worker Service (.NET 10):** Job em background estruturado com **CQRS** responsável por sincronizar avaliações das comunidades externas, acionar o pipeline NLP e gravar o Resumo IA gerado em cada ciclo.
+- **NLP Service (Python):** Microsserviço construído com `FastAPI` e `transformers`. Executa análises de sentimento multilinguais localmente, com fallback automático para `distilbert` caso o modelo principal não carregue.
+- **Frontend App (Angular 21):** Aplicação Single Page fluida usando `Standalone Components`, `Signals` e lazy-loading, consumindo a API e exibindo gráficos analíticos ricos.
 
 ## ✨ Features Principais
 
-- 🔍 **Busca Universal Dinâmica:** Motor de busca que unifica resultados de Animes (Jikan/MyAnimeList), Mangás (Jikan) e Filmes/Séries (TMDB).
-- 🧠 **Análise de Sentimento (IA):** Pipeline local rodando NLP (Hugging Face) para varrer críticas no Reddit, MyAnimeList, TMDB, YouTube e Threads do AniList.
-- 📈 **Gráficos de Hype Histórico:** Painel visual na UI que rastreia a elevação (ou queda) de popularidade de uma obra através dos dias.
-- 📅 **Análise Sazonal:** Dashboard de temporadas identificando blockbusters e joias ocultas baseadas em engajamento.
-- 🎭 **Voz da Comunidade & Relações:** Timeline interativa contendo resenhas da comunidade e navegação de prequelas/sequências derivadas.
-- ⚙️ **Configuração de Alertas (Node-Based):** Uma interface arrastar-e-soltar (Flow) para criar regras (Ex: Se Sentimento > 80, dispare Notificação).
-- 📌 **Watchlist & Notificações:** Área pessoal para monitoramento de Hype Score em tempo real e Central de Alertas integrada.
+| Módulo | Descrição |
+|---|---|
+| 🔍 **Busca Universal** | Unifica resultados de Animes (Jikan/MAL), Mangás, Filmes e Séries (TMDB), segregados por fonte com fallback AniList GraphQL |
+| 🧠 **Análise de Sentimento (IA)** | Pipeline NLP local (Hugging Face) varrendo Reddit, MAL, TMDB, YouTube e Threads AniList |
+| 🤖 **Resumo Executivo IA (Slang-Aware)** | Geração automática de resumo contextualizado por tom de sentimento a cada ciclo do Worker |
+| 📈 **Hype Score Histórico** | Gráfico temporal de popularidade por franquia com variação de engajamento |
+| 📅 **Análise Sazonal** | Dashboard de temporadas identificando Blockbusters vs. Joias Ocultas via AniList |
+| 🗓 **Calendário Semanal** | Grade de lançamentos semanais com episódios e estúdios via AniList `airingSchedules` |
+| 🌐 **Global vs. Brasil** | Comparativo de popularidade global (AniList) vs. engajamento local (YouTube/Reddit) |
+| 🎭 **Linha do Tempo de Relações** | Prequelas, sequências e spin-offs mapeados via AniList GraphQL |
+| 👥 **Personagens & Elenco** | Personagens populares (Jikan) e elenco de atores (TMDB) na tela de detalhes |
+| 📌 **Watchlist & Favoritos** | Lista pessoal persistida no SQL Server com toggle via API |
+| 🔔 **Central de Notificações** | Alertas acionados pelo Motor de Regras (Flow Editor), com CRUD completo e badge em tempo real |
+| ⚙️ **Motor de Regras (Flow)** | Interface arrastar-e-soltar para criar automações (Ex: Se Hype > 80, dispare notificação) |
+| 🏭 **Streaming Providers & Estúdios** | Tabelas `StreamingProviders` e `Estudios` para persistir dados de onde assistir |
+| 🛡️ **NLP Resiliente** | Fallback automático de modelo (`distilbert`) caso `sentencepiece`/XLM-RoBERTa falhe no boot |
 
 ## 🛠 Tecnologias
 
-Abaixo as ferramentas essenciais que tornaram este projeto realidade:
+| Camada | Tecnologias |
+|---|---|
+| **Backend** | C# 13, .NET 10 Minimal APIs, **MediatR (CQRS)**, Dapper, DbUp, SQL Server 2022 |
+| **Worker** | .NET 10 Background Service, **MediatR**, IHttpClientFactory, PeriodicTimer |
+| **Frontend** | Angular 21, SCSS, PrimeNG Icons, Chart.js |
+| **IA / NLP** | Python 3.11, FastAPI, Hugging Face Transformers, Torch, SentencePiece |
+| **Infraestrutura** | Docker, Docker Compose, Nginx |
+| **Integrações** | Jikan (MAL), AniList GraphQL, TMDB, Reddit JSON API, YouTube Data API v3 |
 
-* **Backend & Infraestrutura:** C# 13, .NET 10, SQL Server 2022, DbUp (Migrations), Docker Compose.
-* **Frontend:** Angular 21, PrimeNG, SCSS Global, Chart.js.
-* **Inteligência Artificial:** Python 3.11, FastAPI, Hugging Face, Uvicorn, Torch.
-- **Integrações de API:** `api.jikan.moe` (Animes), `graphql.anilist.co` (Animes Fallback), `api.themoviedb.org` (Filmes/Séries), `reddit.com` (Fóruns), `googleapis.com/youtube/v3` (Vídeos).
+## 📡 Endpoints da API
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/franquias` | Lista todas as franquias |
+| `GET` | `/monitoramento/dashboard` | Dashboard com Hype Score por franquia |
+| `GET` | `/franquias/{id}/detalhes` | Detalhes + histórico + ResumoIA |
+| `GET` | `/franquias/{id}/personagens` | Personagens (Jikan/TMDB) |
+| `GET` | `/franquias/{id}/comunidade` | Reviews e posts de comunidade |
+| `GET` | `/franquias/{id}/relacoes` | Relações (prequelas/sequências) via AniList |
+| `GET` | `/franquias/{id}/comparativo-regional` | Global vs. Brasil (AniList + redes sociais) |
+| `GET` | `/franquias/{id}/streaming` | Provedores de streaming da franquia |
+| `GET` | `/franquias/{id}/estudios` | Estúdios responsáveis pela franquia |
+| `GET` | `/temporadas/analise` | Animes por temporada (AniList GraphQL) |
+| `GET` | `/calendario/semana` | Grade de lançamentos semanal (AniList) |
+| `GET` | `/pesquisa?q={termo}` | Busca multi-fonte com fallback AniList |
+| `POST` | `/franquias/sync` | Sincroniza franquia (upsert) |
+| `POST` | `/monitoramento` | Registra novo ciclo de monitoramento |
+| `GET` | `/favoritos/{userId}` | Lista watchlist do usuário |
+| `POST` | `/favoritos/toggle/{franquiaId}` | Adiciona/remove da watchlist |
+| `GET` | `/notificacoes` | Lista todas as notificações |
+| `PATCH` | `/notificacoes/{id}/ler` | Marca notificação como lida |
+| `DELETE` | `/notificacoes/{id}` | Remove notificação |
+| `GET` | `/fluxos` | Lista motor de regras |
+| `POST` | `/fluxos` | Cria/atualiza fluxo de regras |
 
 ## 🚀 Como Executar
 
 ### Pré-requisitos
-Antes de começar, você precisará ter as seguintes ferramentas instaladas em sua máquina:
 * [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
-* Git (Para clonar o repositório)
+* Git
 
 ### 1. Clonar o Repositório
 ```bash
@@ -81,9 +119,6 @@ cd radar-tendencias
 ```
 
 ### 2. Configurar as Chaves de API
-Você precisará de *API Keys* válidas para o TMDB e o YouTube.
-Substitua os valores placeholders nos arquivos `appsettings.json` nos diretórios do **Worker** e da **API**:
-
 **`RadarTendencias.Worker/appsettings.json`** e **`RadarTendencias.Api/appsettings.json`**:
 ```json
 {
@@ -92,22 +127,20 @@ Substitua os valores placeholders nos arquivos `appsettings.json` nos diretório
 }
 ```
 
-### 3. Iniciar a Aplicação (Docker)
-Execute o comando na raiz do projeto (onde o arquivo `docker-compose.yml` reside):
+### 3. Iniciar a Aplicação
 ```bash
 docker-compose up -d --build
 ```
-*💡 **Nota:** O Docker iniciará o download e compilação de toda a stack. A primeira execução pode levar alguns minutos devido aos downloads dos Modelos de NLP da Hugging Face no container Python.*
+> 💡 **Nota:** A primeira execução pode levar alguns minutos devido ao download dos modelos NLP da Hugging Face.
 
 ### 4. Acessos aos Serviços
-Uma vez iniciados, os serviços estarão acessíveis através das seguintes URLs locais:
 
-| Serviço            | URL                     | Descrição                                        |
-| ------------------ | ----------------------- | ------------------------------------------------ |
-| **Frontend App**   | `http://localhost:4200` | Interface visual final do usuário.               |
-| **API (.NET)**     | `http://localhost:8080` | Core API (Consultas e Automações).               |
-| **NLP (Python)**   | `http://localhost:5000` | Microsserviço de Inteligência Artificial.        |
-| **Banco de Dados** | `localhost,14333`       | SQL Server (User: `sa` / Pass: `Radar@Db2026!`). |
+| Serviço | URL | Descrição |
+|---|---|---|
+| **Frontend App** | `http://localhost:4200` | Interface visual do usuário |
+| **API (.NET)** | `http://localhost:8080` | Core API |
+| **NLP (Python)** | `http://localhost:5000` | Microsserviço de IA |
+| **Banco de Dados** | `localhost,14333` | SQL Server (`sa` / `Radar@Db2026!`) |
 
 ---
 

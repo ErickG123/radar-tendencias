@@ -15,11 +15,17 @@ export class FranquiaDetalhesComponent implements OnInit {
   private http = inject(HttpClient);
   
   franquia = signal<any>(null);
+  resumoIA = signal<string>('');
   historico = signal<any[]>([]);
   personagens = signal<any[]>([]);
+  personagensLoaded = signal<boolean>(false);
   feedbacksComunidade = signal<any[]>([]);
+  comunidadeLoaded = signal<boolean>(false);
   relacoesFranquia = signal<any[]>([]);
   isFavorito = signal<boolean>(false);
+  comparativoRegional = signal<any>(null);
+  streamingProviders = signal<any[]>([]);
+  streamingLoaded = signal<boolean>(false);
   ngOnInit() {
     this.route.paramMap.subscribe(params => {
       const id = params.get('id');
@@ -29,6 +35,8 @@ export class FranquiaDetalhesComponent implements OnInit {
         this.carregarReddit(id);
         this.carregarRelacoes(id);
         this.verificarFavorito(id);
+        this.carregarComparativo(id);
+        this.carregarStreaming(id);
       }
     });
   }
@@ -38,6 +46,7 @@ export class FranquiaDetalhesComponent implements OnInit {
       next: (res) => {
         this.franquia.set(res.Detalhes);
         this.historico.set(res.Historico);
+        this.resumoIA.set(res.ResumoIA ?? '');
       }
     });
   }
@@ -45,16 +54,20 @@ export class FranquiaDetalhesComponent implements OnInit {
   carregarPersonagens(id: string) {
     this.http.get<any[]>(`http://localhost:8080/franquias/${id}/personagens`).subscribe({
       next: (res) => {
-        this.personagens.set(res);
-      }
+        this.personagens.set(res ?? []);
+        this.personagensLoaded.set(true);
+      },
+      error: () => this.personagensLoaded.set(true)
     });
   }
 
   carregarReddit(id: string) {
     this.http.get<any[]>(`http://localhost:8080/franquias/${id}/comunidade`).subscribe({
       next: (res) => {
-        this.feedbacksComunidade.set(res);
-      }
+        this.feedbacksComunidade.set(res ?? []);
+        this.comunidadeLoaded.set(true);
+      },
+      error: () => this.comunidadeLoaded.set(true)
     });
   }
 
@@ -75,6 +88,22 @@ export class FranquiaDetalhesComponent implements OnInit {
   toggleFavorito(id: string) {
     this.http.post<any>(`http://localhost:8080/favoritos/toggle/${id}`, {}).subscribe({
       next: (res) => this.isFavorito.set(res.Favorito)
+    });
+  }
+
+  carregarComparativo(id: string) {
+    this.http.get<any>(`http://localhost:8080/franquias/${id}/comparativo-regional`).subscribe({
+      next: (res) => this.comparativoRegional.set(res)
+    });
+  }
+
+  carregarStreaming(id: string) {
+    this.http.get<any[]>(`http://localhost:8080/franquias/${id}/streaming`).subscribe({
+      next: (res) => {
+        this.streamingProviders.set(res ?? []);
+        this.streamingLoaded.set(true);
+      },
+      error: () => this.streamingLoaded.set(true)
     });
   }
 }

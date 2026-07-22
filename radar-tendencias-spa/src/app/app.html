@@ -27,6 +27,10 @@
         <i class="pi pi-bookmark"></i>
         <span *ngIf="!isSidebarCollapsed()">Minha Watchlist</span>
       </a>
+      <a routerLink="/calendario" routerLinkActive="active" class="nav-item" title="Calendário Semanal">
+        <i class="pi pi-calendar-clock"></i>
+        <span *ngIf="!isSidebarCollapsed()">Calendário Semanal</span>
+      </a>
       <a routerLink="/notificacoes" routerLinkActive="active" class="nav-item" title="Central de Alertas">
         <i class="pi pi-bell"></i>
         <span *ngIf="!isSidebarCollapsed()">Central de Alertas</span>

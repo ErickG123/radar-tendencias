@@ -12,7 +12,7 @@
       <div class="tags-container">
         <span class="tag-badge" *ngFor="let tag of franquia().TagsString?.split(',')">{{ tag.trim() }}</span>
       </div>
-      <p class="sinopse">{{ franquia().Sinopse || 'Nenhuma sinopse disponível.' }}</p>
+      <p class="sinopse" [innerHTML]="franquia().Sinopse || 'Nenhuma sinopse disponível.'"></p>
       
       <div class="metrics-row" *ngIf="historico().length > 0">
         <div class="metric-box">
@@ -29,7 +29,30 @@
     </div>
   </div>
 
-  <div class="characters-section" *ngIf="personagens().length > 0">
+  <div class="resumo-ia-card" *ngIf="resumoIA()">
+    <div class="resumo-ia-header">
+      <i class="pi pi-bolt"></i>
+      <h3>Resumo Executivo &amp; Insights da IA</h3>
+    </div>
+    <p>{{ resumoIA() }}</p>
+  </div>
+
+  <div class="secao-comparativo" *ngIf="comparativoRegional()">
+    <h3>Comparativo de Popularidade: Global vs. Brasil</h3>
+    <div class="comparativo-grid">
+      <div class="comp-card">
+        <span class="comp-label">Relevância Global (AniList)</span>
+        <span class="comp-valor">{{ comparativoRegional().GlobalPopularidade | number:'1.0-1' }} pts</span>
+      </div>
+      <div class="comp-card">
+        <span class="comp-label">Engajamento no Brasil (Redes/YouTube)</span>
+        <span class="comp-valor">{{ comparativoRegional().BrasilEngajamento | number:'1.0-1' }} pts</span>
+      </div>
+    </div>
+    <span class="status-badge">{{ comparativoRegional().StatusComparativo }}</span>
+  </div>
+
+  <div class="characters-section" *ngIf="personagens().length > 0; else semPersonagens">
     <h3 class="section-title">Personagens Populares</h3>
     <div class="characters-grid">
       <div class="character-card" *ngFor="let char of personagens()">
@@ -46,8 +69,14 @@
       </div>
     </div>
   </div>
+  <ng-template #semPersonagens>
+    <div class="empty-fallback" style="margin-top: 1.5rem;" *ngIf="personagensLoaded()">
+      <i class="pi pi-user-minus"></i>
+      <p>Nenhum personagem de destaque indexado para esta obra.</p>
+    </div>
+  </ng-template>
 
-  <div class="reddit-section" *ngIf="feedbacksComunidade().length > 0">
+  <div class="reddit-section" *ngIf="feedbacksComunidade().length > 0; else semComunidade">
     <div class="section-header">
       <i class="pi pi-comments text-primary" style="font-size: 1.5rem;"></i>
       <h3 class="section-title" style="margin: 0;">Voz da Comunidade</h3>
@@ -66,6 +95,38 @@
         </div>
       </a>
     </div>
+  </div>
+  <ng-template #semComunidade>
+    <div class="empty-fallback" style="margin-top: 1.5rem;" *ngIf="comunidadeLoaded()">
+      <i class="pi pi-info-circle"></i>
+      <p>Ainda não há reviews ou discussões suficientes indexadas para esta obra na comunidade.</p>
+    </div>
+  </ng-template>
+
+  <div class="streaming-section" *ngIf="streamingLoaded()">
+    <div class="section-header">
+      <i class="pi pi-desktop text-primary" style="font-size: 1.5rem;"></i>
+      <h3 class="section-title" style="margin: 0;">Onde Assistir</h3>
+    </div>
+    <p class="section-desc">Plataformas disponíveis no Brasil para esta obra.</p>
+
+    <div class="streaming-grid" *ngIf="streamingProviders().length > 0; else semStreaming">
+      <div *ngFor="let p of streamingProviders()" class="provider-card">
+        <img [src]="p.LogoUrl" [alt]="p.NomeProvider" class="provider-logo" *ngIf="p.LogoUrl; else logoFallback" />
+        <ng-template #logoFallback>
+          <div class="provider-logo-placeholder"><i class="pi pi-play-circle"></i></div>
+        </ng-template>
+        <span class="provider-name">{{ p.NomeProvider }}</span>
+        <span class="provider-tipo" [class.tipo-free]="p.Tipo === 'Grátis'" [class.tipo-buy]="p.Tipo === 'Compra'">{{ p.Tipo }}</span>
+      </div>
+    </div>
+
+    <ng-template #semStreaming>
+      <div class="empty-fallback">
+        <i class="pi pi-info-circle"></i>
+        <p>Nenhuma plataforma de streaming encontrada para esta obra no Brasil.</p>
+      </div>
+    </ng-template>
   </div>
 
   <div class="relacoes-section" *ngIf="relacoesFranquia().length > 0">

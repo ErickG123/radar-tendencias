@@ -1,0 +1,44 @@
+---
+title: "ADR-014: Resumo Executivo Dinâmico (IA Slang-Aware)"
+description: "Decisão de implementar geração automática de resumos contextualizados por tom de sentimento no ciclo do Worker"
+---
+
+## Status
+
+Aceito
+
+## Contexto
+
+O sistema calculava Hype Score e Sentimento, mas não fornecia ao usuário uma leitura qualitativa resumida do estado de engajamento de uma obra. Era necessário um mecanismo que traduzisse os dados numéricos em linguagem natural contextualizada para o universo de fandoms.
+
+## Decisão
+
+### Banco de Dados
+
+Adicionada a coluna `ResumoIA VARCHAR(MAX) NULL` na tabela `MonitoramentoHype` via `ALTER TABLE` condicional executado no startup da API.
+
+### Worker (Geração)
+
+Implementado o método `GerarResumoInteligente(string franquiaNome, List<string> textosComunidade, double sentimento)` no `Worker.cs`. O resumo é gerado com base em três faixas de sentimento:
+
+| Faixa | Tom |
+|---|---|
+| ≥ 70% | "altamente favorável e com forte entusiasmo dos fãs" |
+| 40–69% | "estável com discussões mistas sobre o enredo" |
+| < 40% | "com ressalvas e críticas pontuais da comunidade" |
+
+O resumo é enviado junto ao DTO de monitoramento via `POST /monitoramento` e persistido por ciclo.
+
+### API
+
+O endpoint `GET /franquias/{id}/detalhes` passou a retornar `ResumoIA` do registro mais recente de monitoramento, com fallback textual padrão quando ainda não houver dados.
+
+### Frontend
+
+Adicionado o signal `resumoIA` no componente de detalhes, populado a partir da resposta de `/detalhes`. O card visual `resumo-ia-card` exibe o texto com borda esquerda em `var(--primary-color)`, gradiente sutil via `color-mix()` e ícone `pi-bolt`.
+
+## Consequências
+
+- O campo `ResumoIA` é nullable: franquias antigas sem ciclos de Worker ainda não terão resumo, recebendo mensagem padrão na UI
+- O `MonitoramentoDTO` no `Program.cs` foi atualizado para incluir `string? ResumoIA`
+- O método `GerarResumoInteligente` é determinístico (sem chamada a LLM externa), garantindo velocidade e privacidade

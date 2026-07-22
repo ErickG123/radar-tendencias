@@ -1,0 +1,175 @@
+.calendario-wrapper {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.header-secao {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-secao h2 {
+  margin: 0 0 0.25rem;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.header-secao p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.btn-refresh {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.calendario-card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.calendario-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--primary-color);
+}
+
+.card-poster {
+  width: 70px;
+  height: 95px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.no-img {
+  width: 70px;
+  height: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-color);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.estudio-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.card-info h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-color);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.episodio-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  background-color: var(--bg-color);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  display: inline-block;
+  width: fit-content;
+}
+
+.data-hora {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.data-hora i {
+  color: var(--primary-color);
+  font-size: 0.8rem;
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  gap: 1rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: var(--text-secondary);
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.2rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.9rem;
+}

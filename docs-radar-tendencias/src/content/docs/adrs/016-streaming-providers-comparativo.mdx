@@ -1,0 +1,48 @@
+---
+title: "ADR-016: Módulos de Watch Providers, Estúdios e Comparativo Regional"
+description: "Decisão de implementar tabelas de StreamingProviders e Estudios, endpoint de comparativo Global vs. Brasil e correção de fallbacks de estado vazio no Angular"
+---
+
+## Status
+
+Aceito
+
+## Contexto
+
+O sistema necessitava de três melhorias complementares:
+1. Persistência de dados sobre onde assistir cada franquia e quais estúdios a produziram
+2. Um comparativo analítico entre popularidade global (AniList) e engajamento local (Reddit/YouTube)
+3. Correção de bug onde as mensagens de fallback (sem personagens / sem comunidade) apareciam instantaneamente antes das requisições HTTP completarem
+
+## Decisão
+
+### Novas Tabelas SQL
+
+Criadas via migração condicional no startup da API:
+
+- **`StreamingProviders`** — `ProviderID`, `FranquiaID (FK)`, `NomeProvider`, `LogoUrl`, `Tipo`
+- **`Estudios`** — `EstudioID`, `FranquiaID (FK)`, `NomeEstudio`
+
+Ambas com `ON DELETE CASCADE` referenciando `Franquias`.
+
+### Endpoint Comparativo Regional
+
+`GET /franquias/{id}/comparativo-regional` — busca o `ExternalID` da franquia no banco, consulta AniList GraphQL para obter `averageScore`, calcula `GlobalPopularidade` e `BrasilEngajamento` e retorna `StatusComparativo` ("Destaque no Brasil" ou "Forte Apelo Global").
+
+### Correção de Fallbacks Angular
+
+**Problema:** Os signals `personagens` e `feedbacksComunidade` iniciam como `[]`, fazendo com que o `*ngIf="length > 0; else semX"` renderizasse o template de fallback imediatamente, antes mesmo da resposta HTTP chegar.
+
+**Solução:** Adicionados signals de controle `personagensLoaded` e `comunidadeLoaded` (iniciam como `false`). O fallback dentro do `ng-template` só é exibido com `*ngIf="personagensLoaded()"`, garantindo o fluxo correto:
+
+| Estado | Comportamento |
+|---|---|
+| Carregando | Fallback invisível |
+| Resposta com dados | Lista exibida |
+| Resposta vazia | Fallback exibido |
+
+## Consequências
+
+- Tabelas `StreamingProviders` e `Estudios` criadas mas não ainda populadas pelo Worker (roadmap futuro)
+- Comparativo regional usa valor fixo para `BrasilEngajamento` (proxy baseado em análise de sentimento) como primeira versão
+- Correção do bug de fallback melhora significativamente a UX em franquias sem dados de comunidade

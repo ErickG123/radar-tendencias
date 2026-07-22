@@ -1,0 +1,40 @@
+<div class="calendario-wrapper">
+  <div class="header-secao">
+    <div>
+      <h2>Grade de Lançamentos da Semana</h2>
+      <p>Acompanhe em tempo real a data, horário e estúdio responsável pelos próximos episódios.</p>
+    </div>
+    <button class="btn-refresh" (click)="carregarAgenda()" [disabled]="isCarregando()" title="Atualizar grade">
+      <i class="pi" [class.pi-refresh]="!isCarregando()" [class.pi-spin]="isCarregando()" [class.pi-spinner]="isCarregando()"></i>
+    </button>
+  </div>
+
+  <div class="loading-state" *ngIf="isCarregando()">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <p>Sincronizando grade de episódios...</p>
+  </div>
+
+  <div class="calendario-grid" *ngIf="!isCarregando() && agenda().length > 0">
+    <div *ngFor="let item of agenda()" class="calendario-card">
+      <img [src]="item.ImagemUrl" [alt]="item.Nome" *ngIf="item.ImagemUrl; else noImg" class="card-poster" />
+      <ng-template #noImg>
+        <div class="no-img"><i class="pi pi-image"></i></div>
+      </ng-template>
+      <div class="card-info">
+        <span class="estudio-tag">{{ item.Estudio }}</span>
+        <h4>{{ item.Nome }}</h4>
+        <span class="episodio-info">Episódio {{ item.Episodio }}</span>
+        <span class="data-hora">
+          <i class="pi pi-clock"></i>
+          {{ item.DataHora | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!isCarregando() && agenda().length === 0">
+    <i class="pi pi-calendar-times"></i>
+    <h3>Nenhum lançamento programado</h3>
+    <p>Não foi possível carregar a grade de horários no momento.</p>
+  </div>
+</div>

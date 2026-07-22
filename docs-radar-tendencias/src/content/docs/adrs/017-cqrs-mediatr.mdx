@@ -1,0 +1,26 @@
+---
+title: 017. Refatoração para CQRS com MediatR
+---
+
+## Contexto
+
+A API Minimalista (`RadarTendencias.Api`) e o Worker (`RadarTendencias.Worker`) originais foram desenvolvidos concentrando quase toda a regra de negócio e chamadas externas em seus respectivos arquivos principais (`Program.cs` e `Worker.cs`). Com a evolução do projeto e a adição de múltiplos domínios (monitoramento, favoritos, notificações, calendários, IA, streaming), a manutenção tornou-se complexa devido ao inchaço desses arquivos.
+
+## Decisão
+
+Optou-se por implementar rigorosamente o padrão **CQRS** (Command Query Responsibility Segregation) utilizando a biblioteca **MediatR** em ambos os ecossistemas .NET 10. 
+
+Para suportar essa transição:
+1. **Vertical Slice Architecture:** Todo o código antes alocado nos pontos de entrada foi movido para pastas `Features/` agrupadas por domínio de negócio (ex: `Franquias`, `Monitoramento`, `Temporadas`).
+2. **Commands & Queries:** Endpoints da Minimal API e fluxos do Worker (no `PeriodicTimer`) agora apenas injetam o `IMediator` e despacham intenções de execução (*Queries* para consultas, *Commands* para mutações/tarefas).
+3. **Handlers Dedicados:** Cada operação possui um *Handler* específico contendo as consultas SQL Dapper, os Fetchs HTTP e a lógica local de processamento.
+4. **Desacoplamento de DTOs:** Classes e modelos foram isolados em arquivos próprios (`Models.cs` ou acoplados ao próprio Handler).
+
+## Consequências
+
+- **Vantagens:** 
+  - Código modularizado, aplicando firmemente o Princípio da Responsabilidade Única (SRP).
+  - Facilidade de navegação: entender o sistema agora se resume a ler a pasta `Features`.
+  - Melhor capacidade de criar testes unitários para lógicas isoladas.
+- **Desvantagens:**
+  - Aumento perceptível na quantidade de arquivos `.cs` no projeto, dado o boilerplate inerente à separação de classes por requisição/resposta no MediatR.

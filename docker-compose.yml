@@ -53,7 +53,7 @@ services:
 
   frontend:
     build:
-      context: ./radar-tendencias-app
+      context: ./radar-tendencias-spa
     container_name: radar_frontend
     ports:
       - "4200:80"

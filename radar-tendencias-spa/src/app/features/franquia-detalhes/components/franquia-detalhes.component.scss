@@ -269,3 +269,30 @@
 .btn-favorito { display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
 .btn-favorito:hover { border-color: var(--primary-color); color: var(--primary-color); }
 .btn-favorito.favoritado { background-color: var(--primary-color); color: #ffffff; border-color: var(--primary-color); }
+
+.secao-comparativo { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+.secao-comparativo h3 { margin: 0; font-size: 1.1rem; color: var(--text-color); }
+.comparativo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.comp-card { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.comp-label { font-size: 0.8rem; color: var(--text-secondary); }
+.comp-valor { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); }
+.status-badge { align-self: flex-start; background-color: rgba(16, 185, 129, 0.15); color: #10b981; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+.empty-fallback { display: flex; align-items: center; gap: 0.75rem; background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 8px; color: var(--text-secondary); font-size: 0.9rem; }
+.empty-fallback i { font-size: 1.25rem; color: var(--primary-color); }
+
+.resumo-ia-card { background: linear-gradient(135deg, var(--surface-color) 0%, color-mix(in srgb, var(--primary-color) 5%, transparent) 100%); border: 1px solid var(--border-color); border-left: 4px solid var(--primary-color); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem; box-shadow: var(--shadow-sm); }
+.resumo-ia-header { display: flex; align-items: center; gap: 0.5rem; }
+.resumo-ia-header i { color: var(--primary-color); font-size: 1.1rem; }
+.resumo-ia-header h3 { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--text-color); }
+.resumo-ia-card > p { margin: 0; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.65; }
+
+.streaming-section { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.streaming-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+.provider-card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 110px; text-align: center; transition: transform 0.2s, border-color 0.2s; cursor: default; }
+.provider-card:hover { transform: translateY(-3px); border-color: var(--primary-color); }
+.provider-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; }
+.provider-logo-placeholder { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background-color: var(--bg-color); border-radius: 12px; color: var(--text-secondary); font-size: 1.75rem; }
+.provider-name { font-size: 0.75rem; font-weight: 600; color: var(--text-color); line-height: 1.2; word-break: break-word; }
+.provider-tipo { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.5rem; border-radius: 4px; background-color: color-mix(in srgb, var(--primary-color) 15%, transparent); color: var(--primary-color); }
+.provider-tipo.tipo-free { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
+.provider-tipo.tipo-buy { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; }

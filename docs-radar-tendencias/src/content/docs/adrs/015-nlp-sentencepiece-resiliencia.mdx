@@ -1,0 +1,47 @@
+---
+title: "ADR-015: Resiliência do Serviço NLP e Correção do Tokenizer XLM-RoBERTa"
+description: "Decisão de adicionar sentencepiece, protobuf e fallback automático de modelo no microsserviço Python de NLP"
+---
+
+## Status
+
+Aceito
+
+## Contexto
+
+O container `radar_nlp` falhava ao iniciar com o erro:
+
+```
+ValueError: Couldn't instantiate the backend tokenizer...
+You need to have sentencepiece installed to convert a slow tokenizer to a fast one.
+```
+
+O modelo `cardiffnlp/twitter-xlm-roberta-base-sentiment` utiliza um tokenizer baseado em `SentencePiece`, mas essa dependência não constava no `requirements.txt`. Isso causava crash total do uvicorn antes de qualquer requisição ser processada, impedindo toda a pipeline de NLP do Worker.
+
+## Decisão
+
+### Dependências (`requirements.txt`)
+
+Adicionadas as bibliotecas:
+- `sentencepiece==0.2.0` — tokenizer necessário para modelos XLM-RoBERTa
+- `protobuf==4.25.3` — dependência transitiva do sentencepiece
+
+### Fallback de Modelo (`main.py`)
+
+O carregamento do `sentiment_pipeline` foi encapsulado em `try/except`. Caso o modelo XLM-RoBERTa falhe (por falta de dependências, erro de rede ou qualquer outra razão), o serviço inicializa automaticamente com `distilbert-base-uncased-finetuned-sst-2-english` como alternativa leve, garantindo que o endpoint `/analyze` sempre esteja disponível.
+
+```python
+try:
+    sentiment_pipeline = pipeline("sentiment-analysis",
+        model="cardiffnlp/twitter-xlm-roberta-base-sentiment")
+except Exception:
+    sentiment_pipeline = pipeline("sentiment-analysis",
+        model="distilbert-base-uncased-finetuned-sst-2-english")
+```
+
+## Consequências
+
+- O serviço NLP agora inicializa com sucesso mesmo em ambientes com restrições de rede ou versões incompatíveis de bibliotecas
+- O modelo `distilbert` é em inglês e menos preciso para textos em português, mas garante disponibilidade operacional
+- A solução definitiva (sentencepiece instalado) prioriza o modelo multilingual XLM-RoBERTa
+- O tempo de build do container NLP aumentou levemente pelo download das novas dependências

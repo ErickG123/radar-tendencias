@@ -1,0 +1,24 @@
+---
+title: "ADR-013: Calendário Semanal de Lançamentos via AniList"
+description: "Decisão de implementar o módulo de grade de episódios semanais consumindo AniList airingSchedules"
+---
+
+## Status
+
+Aceito
+
+## Contexto
+
+Os usuários precisavam de visibilidade sobre quando os próximos episódios de animes em andamento seriam lançados, incluindo data/hora e estúdio responsável, sem necessidade de persistência local.
+
+## Decisão
+
+Criado o endpoint `GET /calendario/semana` que consulta a query `airingSchedules` do AniList GraphQL em tempo real, retornando os 20 próximos lançamentos ordenados por tempo. Os dados incluem: data/hora (convertida de Unix timestamp), número do episódio, título e estúdio principal.
+
+No Angular, foi criado o componente `CalendarioComponent` com lazy-loading, signal `agenda`, estado de carregamento e fallback visual para lista vazia. O item foi adicionado ao menu lateral com ícone `pi-calendar-clock`.
+
+## Consequências
+
+- Nenhuma tabela adicional necessária (dados em tempo real via GraphQL)
+- O `docker-compose.yml` foi corrigido: o `context` do frontend apontava para `./radar-tendencias-app` (inexistente) e foi corrigido para `./radar-tendencias-spa`
+- Rota `/calendario` adicionada ao `app.routes.ts`
