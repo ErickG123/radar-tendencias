@@ -1,0 +1,29 @@
+<div class="flow-wrapper">
+  
+  <div class="flow-header-actions">
+    <h2>Editor de Regras e Alertas</h2>
+    
+    <div class="action-buttons">
+      <button class="btn-secondary" (click)="carregarFluxo()">
+        <i class="pi pi-download"></i> Carregar Último
+      </button>
+      <button class="btn-primary" (click)="salvarFluxo()">
+        <i class="pi pi-save"></i> Salvar Fluxo
+      </button>
+    </div>
+  </div>
+  
+  <div class="canvas-boundary" #canvas>
+    <svg class="connections-layer">
+      <path *ngFor="let conn of connections()" [attr.d]="getConnectionPath(conn)" class="connection-line"></path>
+      <path *ngIf="drawing()" [attr.d]="getDrawingPath()" class="drawing-line"></path>
+    </svg>
+
+    <div *ngFor="let node of nodes()" class="flow-node" [ngClass]="node.type" cdkDrag cdkDragBoundary=".canvas-boundary" [style.left.px]="node.position.x" [style.top.px]="node.position.y" (cdkDragEnded)="onDragEnded($event, node)">
+      <div class="node-header">{{ node.label }}</div>
+      <div class="ports-container">
+        <div *ngFor="let port of node.ports" class="port" [ngClass]="'port-' + port.type" (mousedown)="startDrawing($event, node, port.id, port.type)" (mouseup)="finishDrawing($event, node, port.id, port.type)"></div>
+      </div>
+    </div>
+  </div>
+</div>

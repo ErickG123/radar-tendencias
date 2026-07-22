@@ -1,0 +1,48 @@
+<div class="watchlist-wrapper">
+  <div class="header-secao">
+    <div>
+      <h2>Minha Watchlist & Favoritos</h2>
+      <p>Acompanhe em tempo real o Hype e o Sentimento das obras selecionadas por você.</p>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isCarregando()">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <p>Carregando sua lista pessoal...</p>
+  </div>
+
+  <div class="watchlist-grid" *ngIf="!isCarregando() && favoritos().length > 0">
+    <a *ngFor="let item of favoritos()" [routerLink]="['/franquia', item.FranquiaID]" class="watchlist-card">
+      <div class="img-container">
+        <img [src]="item.ImagemUrl" [alt]="item.Nome" *ngIf="item.ImagemUrl; else noImg" />
+        <ng-template #noImg><div class="no-img"><i class="pi pi-image"></i></div></ng-template>
+        <button class="btn-remover" (click)="removerFavorito(item.FranquiaID, $event)" title="Remover da Watchlist">
+          <i class="pi pi-trash"></i>
+        </button>
+      </div>
+
+      <div class="card-content">
+        <h4>{{ item.Nome }}</h4>
+        
+        <div class="metricas-resumo">
+          <div class="metrica-item">
+            <span class="label">Hype Score</span>
+            <span class="valor hype">{{ item.HypeScore | number:'1.0-1' }}</span>
+          </div>
+          <div class="metrica-item">
+            <span class="label">Sentimento IA</span>
+            <span class="valor sentimento">{{ item.SentimentoPositivo }}%</span>
+          </div>
+        </div>
+
+        <span class="data-adicao">Adicionado em {{ item.DataAdicao | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="empty-state" *ngIf="!isCarregando() && favoritos().length === 0">
+    <i class="pi pi-bookmark" style="font-size: 3rem; color: var(--text-secondary);"></i>
+    <h3>Sua Watchlist está vazia</h3>
+    <p>Navegue pelas franquias ou utilize a busca para favoritar obras e monitorá-las aqui.</p>
+  </div>
+</div>

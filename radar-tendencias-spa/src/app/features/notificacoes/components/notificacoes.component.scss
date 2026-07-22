@@ -1,0 +1,20 @@
+.notificacoes-wrapper { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.header-secao h2 { margin: 0; color: var(--text-color); font-size: 1.5rem; }
+.header-secao p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
+.notificacoes-lista { display: flex; flex-direction: column; gap: 0.75rem; }
+.notificacao-card { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; display: flex; align-items: flex-start; gap: 1rem; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+.notificacao-card:hover { border-color: var(--primary-color); }
+.notificacao-card.nao-lida { border-left: 4px solid var(--primary-color); background-color: rgba(var(--primary-color-rgb, 59, 130, 246), 0.03); }
+.icone-status { font-size: 1.25rem; margin-top: 0.1rem; }
+.icone-status .text-primary { color: var(--primary-color); }
+.icone-status .text-muted { color: var(--text-secondary); }
+.conteudo { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+.titulo-linha { display: flex; justify-content: space-between; align-items: center; }
+.titulo-linha h4 { margin: 0; font-size: 1rem; color: var(--text-color); }
+.data { font-size: 0.75rem; color: var(--text-secondary); }
+.conteudo p { margin: 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
+.acoes { display: flex; gap: 0.5rem; align-items: center; }
+.btn-acao, .btn-remover { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-acao:hover { border-color: var(--primary-color); color: var(--primary-color); }
+.btn-remover:hover { border-color: #ef4444; color: #ef4444; }
+.empty-state, .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem; gap: 1rem; color: var(--text-secondary); text-align: center; }

@@ -1,0 +1,73 @@
+<div class="temporadas-wrapper">
+  <div class="header-secao">
+    <div>
+      <h2>Comparativo Sazonal de Popularidade</h2>
+      <p>Análise de engajamento, notas e volume de listas dos lançamentos por temporada.</p>
+    </div>
+    
+    <div class="filtros-container">
+      <select [(ngModel)]="anoSelecionado" (change)="mudarFiltros()" class="filtro-select">
+        <option *ngFor="let ano of anosDisponiveis" [value]="ano">{{ ano }}</option>
+      </select>
+      
+      <select [(ngModel)]="temporadaSelecionada" (change)="mudarFiltros()" class="filtro-select">
+        <option *ngFor="let t of temporadasDisponiveis" [value]="t.value">{{ t.label }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isCarregando()">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem"></i>
+    <p>Calculando métricas de popularidade na AniList...</p>
+  </div>
+
+  <div class="layout-dividido" *ngIf="!isCarregando()">
+    <div class="coluna-bloco">
+      <div class="coluna-cabecalho blockbuster-cabecalho">
+        <i class="pi pi-star-fill"></i>
+        <h3>Blockbusters e Alta Popularidade ({{ blockbusters().length }})</h3>
+      </div>
+      
+      <div class="cards-lista">
+        <div *ngFor="let anime of blockbusters()" class="anime-comparativo-card">
+          <img [src]="anime.ImagemUrl" [alt]="anime.Nome" />
+          <div class="anime-info">
+            <h4>{{ anime.Nome }}</h4>
+            <div class="metricas-grid">
+              <span class="metrica"><strong>{{ anime.Popularidade | number }}</strong> usuários</span>
+              <span class="metrica nota"><i class="pi pi-star"></i> {{ anime.NotaMedia }}</span>
+              <span class="metrica trending"><i class="pi pi-bolt"></i> +{{ anime.Trending }}</span>
+            </div>
+            <div class="tags-container">
+              <span *ngFor="let g of anime.Generos.slice(0, 3)" class="tag-badge">{{ g }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="coluna-bloco">
+      <div class="coluna-cabecalho nicho-cabecalho">
+        <i class="pi pi-compass"></i>
+        <h3>Joias Ocultas e Menos Populares ({{ joiasOcultas().length }})</h3>
+      </div>
+      
+      <div class="cards-lista">
+        <div *ngFor="let anime of joiasOcultas()" class="anime-comparativo-card">
+          <img [src]="anime.ImagemUrl" [alt]="anime.Nome" />
+          <div class="anime-info">
+            <h4>{{ anime.Nome }}</h4>
+            <div class="metricas-grid">
+              <span class="metrica"><strong>{{ anime.Popularidade | number }}</strong> usuários</span>
+              <span class="metrica nota"><i class="pi pi-star"></i> {{ anime.NotaMedia }}</span>
+              <span class="metrica trending"><i class="pi pi-bolt"></i> +{{ anime.Trending }}</span>
+            </div>
+            <div class="tags-container">
+              <span *ngFor="let g of anime.Generos.slice(0, 3)" class="tag-badge">{{ g }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

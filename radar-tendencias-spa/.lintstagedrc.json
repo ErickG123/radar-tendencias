@@ -1,0 +1,6 @@
+{
+  "*.{ts,js}": [
+    "node scripts/remove-logs.cjs",
+    "npm run lint:fix"
+  ]
+}

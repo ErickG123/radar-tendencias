@@ -1,0 +1,70 @@
+<div class="busca-wrapper">
+  <div class="busca-header">
+    <h2>Resultados para "{{ termoBusca() }}"</h2>
+    <p>Encontramos {{ resultados().length }} resultados segregados por base de dados.</p>
+  </div>
+
+  <div class="loading-state" *ngIf="isCarregando()">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <p>Varrendo MyAnimeList, AniList e TMDB...</p>
+  </div>
+
+  <div class="fonte-secao" *ngIf="!isCarregando() && resultadosMal().length > 0">
+    <h3 class="secao-titulo">MyAnimeList / Jikan</h3>
+    <div class="resultados-grid">
+      <a *ngFor="let item of resultadosMal()" [routerLink]="['/franquia', item.FranquiaID]" class="resultado-card">
+        <div class="img-wrapper">
+          <img *ngIf="item.ImagemUrl; else noImage" [src]="item.ImagemUrl" [alt]="item.Nome" />
+          <ng-template #noImage>
+            <div class="no-img"><i class="pi pi-image"></i></div>
+          </ng-template>
+        </div>
+        <div class="card-info">
+          <span class="categoria-badge cat-1">{{ item.Fonte }}</span>
+          <h4>{{ item.Nome }}</h4>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="fonte-secao" *ngIf="!isCarregando() && resultadosAnilist().length > 0">
+    <h3 class="secao-titulo">AniList (GraphQL)</h3>
+    <div class="resultados-grid">
+      <a *ngFor="let item of resultadosAnilist()" [routerLink]="['/franquia', item.FranquiaID]" class="resultado-card">
+        <div class="img-wrapper">
+          <img *ngIf="item.ImagemUrl; else noImage" [src]="item.ImagemUrl" [alt]="item.Nome" />
+          <ng-template #noImage>
+            <div class="no-img"><i class="pi pi-image"></i></div>
+          </ng-template>
+        </div>
+        <div class="card-info">
+          <span class="categoria-badge cat-3">AniList</span>
+          <h4>{{ item.Nome }}</h4>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="fonte-secao" *ngIf="!isCarregando() && resultadosTmdb().length > 0">
+    <h3 class="secao-titulo">TMDB (Filmes e Séries)</h3>
+    <div class="resultados-grid">
+      <a *ngFor="let item of resultadosTmdb()" [routerLink]="['/franquia', item.FranquiaID]" class="resultado-card">
+        <div class="img-wrapper">
+          <img *ngIf="item.ImagemUrl; else noImage" [src]="item.ImagemUrl" [alt]="item.Nome" />
+          <ng-template #noImage>
+            <div class="no-img"><i class="pi pi-image"></i></div>
+          </ng-template>
+        </div>
+        <div class="card-info">
+          <span class="categoria-badge cat-2">TMDB</span>
+          <h4>{{ item.Nome }}</h4>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!isCarregando() && resultados().length === 0">
+    <i class="pi pi-search"></i>
+    <p>Nenhum resultado encontrado. Tente termos diferentes.</p>
+  </div>
+</div>
