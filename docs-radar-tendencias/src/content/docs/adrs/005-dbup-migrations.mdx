@@ -1,0 +1,15 @@
+---
+title: ADR 005 - Migrations com DbUp no Ecossistema Docker
+---
+## Status
+Aceito
+
+## Contexto
+O projeto utiliza SQL Server conteinerizado via Docker. O gerenciamento de esquemas de banco de dados e a criação de tabelas e categorias iniciais precisam ocorrer automaticamente quando o contêiner da API é iniciado, sem exigir execução manual de scripts.
+
+## Decisão
+Utilizar a biblioteca DbUp embutida na inicialização da API .NET. Os scripts SQL (DDL e DML) são configurados como "Embedded Resources" no projeto. Ao iniciar, a API verifica a existência do banco e aplica os scripts pendentes sequencialmente.
+
+## Consequências
+* Positivas: Automação completa do setup local e de produção; garantia de consistência estrutural entre diferentes ambientes.
+* Negativas: A API requer permissões elevadas no banco de dados para criar e alterar esquemas, o que pode exigir revisão de segurança em produção.

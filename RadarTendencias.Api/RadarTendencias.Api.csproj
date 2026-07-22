@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="dbup-sqlserver" Version="7.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\Script0001_CreateTables.sql" />
+    <EmbeddedResource Include="Scripts\Script0002_SeedCategorias.sql" />
+    <EmbeddedResource Include="Scripts\Script0002_Motor_Regras.sql" />
+    <EmbeddedResource Include="Scripts\Script0003_SeedCategoriaFilmes.sql" />
+    <EmbeddedResource Include="Scripts\Script0003_Alertas.sql" />
+    <EmbeddedResource Include="Scripts\Script0004_Tags.sql" />
+    <EmbeddedResource Include="Scripts\Script0005_FranquiaDetalhes.sql" />
+  </ItemGroup>
+
+</Project>

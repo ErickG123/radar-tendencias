@@ -1,0 +1,23 @@
+---
+title: ADR 009 - Desacoplamento da Análise de Sentimento (NLP) e Integração Reddit
+description: Decisão arquitetural sobre o processamento de linguagem natural.
+---
+
+## Status
+Aceito
+
+## Contexto
+O cálculo inicial do "Sentimento Positivo" das obras estava fortemente acoplado ao Hype Score, utilizando uma fórmula matemática básica (`Score * 10`) ou uma análise léxica simples no código C#. Isso impedia a plataforma de funcionar como uma ferramenta real de *Social Listening*, pois a variação de sentimento orgânico não era detectada. Além disso, as fontes de dados (TMDB e Jikan) fornecem apenas métricas estáticas de catálogo, não refletindo as conversas atuais das comunidades.
+
+## Decisão
+1. **Microsserviço de NLP:** Isolamos a análise de sentimento em um microsserviço independente utilizando Python, FastAPI e a biblioteca `transformers` da Hugging Face. Optou-se pelo modelo `nlptown/bert-base-multilingual-uncased-sentiment` por sua capacidade nativa de processar múltiplos idiomas e retornar classificações baseadas em contexto real, superando a análise léxica. O serviço será orquestrado via Docker.
+2. **Integração com o Reddit:** O `.NET Worker` foi atualizado para, antes de solicitar a análise de sentimento, buscar as 5 postagens mais quentes ("Hot") sobre a franquia na API pública do Reddit. 
+
+## Consequências
+- **Positivas:** 
+  - A métrica de Sentimento torna-se independente e altamente precisa.
+  - O sistema passa a refletir a opinião imediata do público, agregando extremo valor à funcionalidade de *Social Listening*.
+  - A arquitetura em microsserviço permite que o motor de IA seja escalado, atualizado ou substituído sem impacto no Core .NET.
+- **Negativas:** 
+  - Maior complexidade na infraestrutura local (necessidade de build de contêineres maiores devido às bibliotecas `torch` e `transformers`).
+  - O Worker torna-se dependente da disponibilidade da API do Reddit, exigindo tratamentos rigorosos de *fallback* (retornando à sinopse da obra caso o Reddit falhe ou aplique rate limit).

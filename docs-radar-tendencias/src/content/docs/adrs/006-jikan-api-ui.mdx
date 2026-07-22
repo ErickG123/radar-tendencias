@@ -1,0 +1,17 @@
+---
+title: ADR 006 - Coleta de Dados Reais e Adaptações de UI
+---
+## Status
+Aceito
+
+## Contexto
+O Worker Service necessita de uma fonte de dados reais, aberta e relacionada à cultura pop, sem as limitações de "rate limit" e bloqueios comerciais de APIs tradicionais de redes sociais. Adicionalmente, a renderização de textos longos (títulos de obras) nos gráficos da interface gerava quebra de layout.
+
+## Decisão
+1. **Coleta de Dados:** Utilização da Jikan API (MyAnimeList) consumida diretamente pelo Worker para capturar a popularidade de animes da temporada atual.
+2. **Interface Visual:** Transição de gráficos de barras verticais para barras horizontais via Chart.js/PrimeNG no Angular, permitindo a leitura adequada de títulos extensos.
+3. **Desempenho da Tabela:** Remoção de rolagem (scroll) fixa nas tabelas e adoção de paginação nativa do PrimeNG para evitar conflitos de renderização com CSS Grid.
+
+## Consequências
+* Positivas: Eliminação da necessidade de gestão de tokens OAuth2; interface limpa e legível sem distorção tipográfica; responsividade preservada.
+* Negativas: A amarração à Jikan API especifica temporariamente o escopo do radar ao nicho de animes, exigindo futuros conectores para outras mídias.

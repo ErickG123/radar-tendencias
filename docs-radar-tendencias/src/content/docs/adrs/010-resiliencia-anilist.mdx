@@ -1,0 +1,18 @@
+---
+title: ADR 010 - Resiliência e Fallback com AniList API (GraphQL)
+description: Decisão sobre o tratamento de falhas e limite de uso da API Pública do Jikan (MyAnimeList).
+---
+
+## Status
+Aceito
+
+## Contexto
+O motor de busca dependia exclusivamente da API do Jikan (MyAnimeList) para animes e mangás. Sendo uma infraestrutura pública e gratuita, o Jikan frequentemente passa por instabilidades ou retorna `504 Gateway Timeout`. A ausência de fallback resultava na quebra de dados, omitindo animes ou retornando apenas resultados em live-action pelo TMDB.
+
+## Decisão
+Implementamos um modelo de fallback ativo para o endpoint de pesquisas. Quando uma busca de Animes no Jikan resulta em erro de requisição ou não encontra os dados por instabilidade, o servidor `.NET Core` realiza um redirecionamento limpo da requisição para a API GraphQL do AniList (`graphql.anilist.co`). 
+A busca na AniList solicita os campos equivalentes de nome, popularidade, gêneros e imagens, reabastecendo o `SyncFranquiaDTO` sem interrupção de serviço.
+
+## Consequências
+- Alta disponibilidade nas buscas, anulando o impacto das quedas frequentes do Jikan.
+- Maior complexidade no parse de JSON, introduzindo dependência de queries em formato GraphQL e mapeamentos DTO dedicados.

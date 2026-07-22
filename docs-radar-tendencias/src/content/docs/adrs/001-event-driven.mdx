@@ -1,0 +1,8 @@
+---
+title: ADR 001 - Ingestão de Dados Orientada a Eventos
+---
+## Status
+Aceito
+
+## Decisão
+Adotar uma arquitetura orientada a eventos para a camada de ingestão, utilizando um Message Broker. Os workers de coleta atuarão como produtores, publicando o JSON bruto em filas. Os serviços de NLP em .NET atuarão como consumidores assíncronos.

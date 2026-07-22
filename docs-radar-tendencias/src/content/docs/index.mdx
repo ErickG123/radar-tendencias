@@ -1,0 +1,31 @@
+---
+title: Bem-vindo à Documentação
+description: Base de conhecimento técnica do Radar de Tendências.
+template: splash
+hero:
+  tagline: Explore a arquitetura, APIs e decisões técnicas do ecossistema.
+  actions:
+    - text: Ler ADRs
+      link: /adrs/009-nlp-microservice
+      icon: right-arrow
+      variant: primary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Arquitetura do Sistema
+
+<CardGrid stagger>
+  <Card title="Frontend (Angular 21)" icon="laptop">
+    Painel administrativo focado em performance com Standalone Components, gerenciamento de estado via Signals e UI padronizada com PrimeNG e variáveis globais para Dark/Light mode.
+  </Card>
+  <Card title="Backend (.NET 10)" icon="setting">
+    APIs de alta performance utilizando Minimal APIs, mapeamento Dapper para consultas otimizadas e DbUp para versionamento de banco de dados integrado.
+  </Card>
+  <Card title="Motor de NLP (Python)" icon="magnifier">
+    Microsserviço isolado em FastAPI rodando modelos da Hugging Face para análise de sentimento profunda, servido via contêiner Docker.
+  </Card>
+  <Card title="Workers & Social Listening" icon="random">
+    Serviços em background que orquestram a extração de dados do TMDB, Jikan e métricas orgânicas da API pública do Reddit.
+  </Card>
+</CardGrid>

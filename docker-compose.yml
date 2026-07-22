@@ -1,0 +1,65 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: radar_db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Radar@Db2026!
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Radar@Db2026!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nlp_service:
+    build:
+      context: ./RadarTendencias.NLP
+    container_name: radar_nlp
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./RadarTendencias.Api
+    container_name: radar_api
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=RadarTendencias;User Id=sa;Password=Radar@Db2026!;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - NlpBaseUrl=http://nlp_service:5000
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      nlp_service:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./RadarTendencias.Worker
+    container_name: radar_worker
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=RadarTendencias;User Id=sa;Password=Radar@Db2026!;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - ApiBaseUrl=http://api:8080
+      - NlpBaseUrl=http://nlp_service:5000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./radar-tendencias-app
+    container_name: radar_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  sqlvolume:

@@ -1,0 +1,10 @@
+---
+title: ADR 004 - Governança de Código e Pipeline
+---
+## Status
+Aceito
+
+## Decisão
+Implementar Git hooks utilizando Husky. Uso do commitlint para forçar Conventional Commits. Uso do lint-staged configurado para rodar a limpeza e formatação estritamente na seguinte ordem:
+1. Execução de `node scripts/remove-logs.cjs`
+2. Execução imediata de `npm run lint:fix` para corrigir o formato após a remoção.

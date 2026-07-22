@@ -1,0 +1,18 @@
+---
+title: ADR 008 - Motor de Regras Visual (Canvas)
+---
+## Status
+Aceito
+
+## Contexto
+O sistema precisava de uma interface para que usuários pudessem configurar alertas automáticos baseados no Hype Score, sem a necessidade de codificação direta de scripts.
+
+## Decisão
+Construção de um Flow Editor customizado no Angular. A arquitetura visual utiliza nós (nodes) movimentáveis via `cdkDrag`, categorizados estritamente como 'inicio', 'condicao', 'acao' e 'fim'. As conexões são desenhadas utilizando uma camada SVG sobreposta com curvas de Bézier dinâmicas que acompanham a posição dos nós em tempo real.
+
+## Prevenção de Loops
+Foi implementado um algoritmo de detecção de ciclos utilizando Busca em Profundidade (DFS) com uma pilha de recursão para bloquear a criação de links que gerem loops infinitos na execução das regras de negócio.
+
+## Consequências
+* Positivas: Autonomia para a equipe de negócios na criação de fluxos de decisão; validação de loops no momento do design.
+* Negativas: Necessidade de manutenção de uma engine vetorial própria (cálculo de coordenadas SVG) em vez de utilizar bibliotecas pesadas de terceiros.

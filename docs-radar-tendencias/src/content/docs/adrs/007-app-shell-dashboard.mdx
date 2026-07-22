@@ -1,0 +1,17 @@
+---
+title: ADR 007 - App Shell e Dashboard Dinâmico
+---
+## Status
+Aceito
+
+## Contexto
+O frontend necessitava de uma navegação global escalável e um dashboard que permitisse personalização por parte do usuário. Além disso, a categorização dos dados (Animes vs. Filmes/Séries) misturada gerava confusão analítica, e o Dark Mode precisava garantir a legibilidade estrita de textos e cabeçalhos.
+
+## Decisão
+1. **App Shell:** Implementação de um layout global fixo com menu lateral (Sidebar) e navegação roteada, separando o contexto do Dashboard e do Motor de Regras.
+2. **Dashboard Dinâmico:** Utilização do `@angular/cdk/drag-drop` acoplado ao `sessionStorage` para permitir a reorganização dos widgets (gráficos e tabelas) exclusivamente quando o "Modo de Edição" estiver ativo.
+3. **Filtros de Categoria:** A API passou a retornar o `CategoriaID`, permitindo a filtragem via Signals na interface Angular sem novas requisições HTTP.
+
+## Consequências
+* Positivas: Melhoria drástica na UX corporativa, retenção de layout preferido do usuário e navegação clara.
+* Negativas: Aumento da complexidade de gerenciamento de estado no componente do dashboard e acoplamento à dependência do CDK.

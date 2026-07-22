@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+TestResults/
+
+# Angular
+.angular/
+coverage/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Docker
+.dockerignore
