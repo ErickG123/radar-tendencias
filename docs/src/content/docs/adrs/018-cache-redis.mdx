@@ -1,0 +1,30 @@
+---
+title: ADR - Camada de Cache com Redis
+description: Architecture Decision Record sobre a adoção do Redis para otimização de consultas e SignalR.
+---
+
+# Architecture Decision Record: Camada de Cache (Redis)
+
+## Status
+Aceito
+
+## Contexto
+O ecossistema do Radar de Tendências requer exibição ágil de dados nos endpoints de alto tráfego (como o Dashboard e Detalhes da Franquia). Adicionalmente, há a necessidade de emitir notificações em tempo real (Push Notifications via WebSockets) para os clientes Angular sempre que o Worker de background concluir a sincronização de dados. O uso exclusivo do banco relacional para leitura constante seria custoso, e a escalabilidade de WebSockets requer um barramento distribuído.
+
+## Decisão
+Adotaremos o **Redis** como a estrutura In-Memory unificada no ecossistema Docker para cumprir os seguintes propósitos:
+
+1. **In-Memory Cache (CQRS Queries):** Armazenamento temporário de respostas da API para reduzir a carga no SQL Server. A estratégia de expiração será por TTL ou invalidação direta via Webhooks disparados pelo Worker.
+2. **Backplane para SignalR:** Gerenciamento centralizado do roteamento de mensagens e eventos em tempo real, permitindo escalabilidade horizontal do backend sem perdas de pacotes WebSocket.
+
+## Consequências
+
+- **Positivas:** 
+  - Drástica redução na latência de leitura para o frontend.
+  - Alívio da infraestrutura de banco de dados principal.
+  - Escalabilidade confiável para o tráfego do SignalR.
+- **Negativas:** 
+  - Aumento da complexidade da arquitetura, exigindo monitoramento e manutenção de um novo container na infraestrutura Docker.
+- **Ações Imediatas:** 
+  - O contêiner `redis:alpine` foi adicionado ao `docker-compose.yml`.
+  - É obrigatória a configuração da variável de ambiente `Redis__ConnectionString="redis:6379"` nos containers `.NET`.

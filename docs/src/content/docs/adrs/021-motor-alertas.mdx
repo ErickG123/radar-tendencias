@@ -1,0 +1,21 @@
+---
+title: ADR - Motor de Alertas Customizados
+description: Architecture Decision Record sobre o sistema de triggers e alertas proativos.
+---
+
+# Architecture Decision Record: Motor de Alertas Customizados
+
+## Status
+Aceito
+
+## Contexto
+O usuário final precisava não apenas visualizar de forma passiva os dados coletados, mas ser informado proativamente por meio de regras configuráveis (Triggers/Gatilhos) quando determinada métrica de uma obra exceder ou for inferior a um patamar definido (exemplo: Hype Score acima de 85, ou Sentimento Positivo abaixo de 40%).
+
+## Decisão
+Foi adicionado o módulo completo de "Meus Alertas". 
+No Backend .NET (CQRS Minimal API), criamos a tabela base `AlertasUsuario` associada às obras e abrimos endpoints CRUD convencionais para controle, validando DTOs (Records).
+No Frontend Angular, os formulários com validação bidirecional (`[(ngModel)]`) persistem estados mutáveis baseados em Signals, comunicando diretamente com as rotas para inclusão ou remoção dos triggers listados.
+
+## Consequências
+- **Positivas:** Engajamento assíncrono com a plataforma. Os operadores não precisam fiscalizar o painel diariamente para agir em movimentos do mercado.
+- **Negativas:** Será necessário o desacoplamento de um worker subsequente futuro responsável pelo "Matching" dos dados que chegam contra as regras ativas inseridas pelos usuários.

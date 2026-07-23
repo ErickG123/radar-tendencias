@@ -1,0 +1,104 @@
+<div class="dashboard-wrapper">
+  <div class="dashboard-header-actions">
+    <div class="header-texts">
+      <h2>
+        {{ selectedCategory() === 1 ? 'Visão: Animes' : (selectedCategory() === 2 ? 'Visão: Filmes e Séries' : 'Visão Geral do Mercado') }}
+      </h2>
+      <p>Acompanhe o engajamento e a recepção das franquias monitoradas.</p>
+    </div>
+    
+    <div class="header-buttons" style="display: flex; gap: 0.5rem; align-items: center;">
+      <button class="btn-exportar" (click)="exportarRelatorio()" [disabled]="isExportando()">
+        <i class="pi" [ngClass]="isExportando() ? 'pi-spinner pi-spin' : 'pi-file-excel'"></i>
+        {{ isExportando() ? 'Gerando...' : 'Exportar Relatório' }}
+      </button>
+
+      <button class="btn-edit" [class.editing]="isEditMode()" (click)="toggleEditMode()">
+        <i class="pi" [ngClass]="isEditMode() ? 'pi-check' : 'pi-th-large'"></i>
+        {{ isEditMode() ? 'Salvar Layout' : 'Editar Layout' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-title">Top Franquia (Hype)</span>
+      <h3 class="kpi-value">{{ topFranquia() }}</h3>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-title">Volume Total de Menções</span>
+      <h3 class="kpi-value">{{ totalMencoes() | number }}</h3>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-title">Obras em Alta</span>
+      <h3 class="kpi-value">{{ filteredDashboardData().length }}</h3>
+    </div>
+  </div>
+
+  <div cdkDropList class="widget-list" (cdkDropListDropped)="drop($event)">
+    <div *ngFor="let widget of widgets()" class="widget-box" [ngClass]="[widget.size, isEditMode() ? 'editable' : '']" cdkDrag [cdkDragDisabled]="!isEditMode()">
+      
+      <ng-container *ngIf="widget.id === 'info-metricas'">
+        <div class="widget-header">Entendendo as Métricas</div>
+        <div class="info-content">
+          <p>O <strong>Hype Score (0-100)</strong> padroniza a relevância cruzando o Score do Jikan e a Popularidade do TMDB.</p>
+          <p>O <strong>Sentimento (IA)</strong> analisa as sinopses com PLN.</p>
+          <ul class="legend-list">
+            <li><span class="legend-color" style="background-color: #22c55e;"></span> <strong>≥ 70%:</strong> Recepção extremamente positiva.</li>
+            <li><span class="legend-color" style="background-color: #f59e0b;"></span> <strong>41% - 69%:</strong> Recepção mista ou neutra.</li>
+            <li><span class="legend-color" style="background-color: #ef4444;"></span> <strong>≤ 40%:</strong> Alerta de recepção negativa.</li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="widget.id === 'chart-hype'">
+        <div class="widget-header">Radar de Tendências - Hype Score</div>
+        <div class="chart-scroll-container">
+          <p-chart type="bar" [data]="chartData()" [options]="chartOptions" [style]="{'height': dynamicChartHeight(), 'display': 'block', 'width': '100%'}"></p-chart>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="widget.id === 'chart-tribos'">
+        <div class="widget-header">Top Tribos (Gêneros)</div>
+        <div style="height: 250px; display: flex; justify-content: center; align-items: center;">
+          <p-chart type="pie" [data]="pieChartData()" [options]="pieChartOptions"></p-chart>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="widget.id === 'table-franquias'">
+        <div class="widget-header">Radar Detalhado</div>
+        <div class="table-responsive">
+          <p-table [value]="filteredDashboardData()" [paginator]="true" [rows]="10" [showCurrentPageReport]="true" [tableStyle]="{ 'min-width': '600px' }">
+            <ng-template #header>
+              <tr>
+                <th style="color: var(--header-color); border-bottom: 1px solid var(--border-color); text-align: left; padding: 1rem 0.5rem;">Nome</th>
+                <th style="color: var(--header-color); border-bottom: 1px solid var(--border-color); text-align: left; padding: 1rem 0.5rem;">Tags (Tribos)</th>
+                <th style="color: var(--header-color); border-bottom: 1px solid var(--border-color); text-align: right; padding: 1rem 0.5rem;">Hype Score</th>
+                <th style="color: var(--header-color); border-bottom: 1px solid var(--border-color); text-align: right; padding: 1rem 0.5rem;">Sentimento (IA)</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-rowData>
+              <tr [routerLink]="['/franquia', rowData.FranquiaID]" class="clickable-row">
+                <td style="color: var(--text-color); border-bottom: 1px solid var(--border-color); padding: 1rem 0.5rem; font-weight: 500;">{{ rowData.Nome }}</td>
+                <td style="border-bottom: 1px solid var(--border-color); padding: 1rem 0.5rem;">
+                  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <span *ngFor="let tag of rowData.TagList" class="tag-badge">{{ tag }}</span>
+                  </div>
+                </td>
+                <td style="color: var(--text-color); border-bottom: 1px solid var(--border-color); padding: 1rem 0.5rem; text-align: right; font-weight: 600;">{{ rowData.HypeScore | number:'1.0-1' }}</td>
+                <td style="border-bottom: 1px solid var(--border-color); padding: 1rem 0.5rem; text-align: right; font-weight: 600;">
+                  <span [style.color]="rowData.SentimentoPositivo >= 70 ? '#22c55e' : (rowData.SentimentoPositivo <= 40 ? '#ef4444' : '#f59e0b')">
+                    {{ rowData.SentimentoPositivo | number:'1.0-1' }}%
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr><td colspan="4" style="color: var(--text-color); text-align: center; padding: 2rem;">Nenhum dado capturado ainda.</td></tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

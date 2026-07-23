@@ -1,0 +1,25 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo-area">
+      <i class="pi pi-radar"></i>
+      <h2>Radar de Tendências</h2>
+    </div>
+    
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" [(ngModel)]="email" class="input-dark" placeholder="seu@email.com">
+    </div>
+
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" [(ngModel)]="senha" class="input-dark" placeholder="••••••••">
+    </div>
+
+    <span class="error-msg" *ngIf="erro()">{{ erro() }}</span>
+
+    <button class="btn-login" (click)="fazerLogin()" [disabled]="isCarregando()">
+      <i class="pi pi-spin pi-spinner" *ngIf="isCarregando()"></i>
+      {{ isCarregando() ? 'Entrando...' : 'Entrar' }}
+    </button>
+  </div>
+</div>

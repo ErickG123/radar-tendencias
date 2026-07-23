@@ -1,0 +1,20 @@
+---
+title: ADR - Observabilidade e Telemetria
+description: Architecture Decision Record sobre a monitoria de infraestrutura e aplicação.
+---
+
+# Architecture Decision Record: Observabilidade e Telemetria
+
+## Status
+Aceito
+
+## Contexto
+Com o aumento de complexidade da infraestrutura distribuída (Worker, API .NET, SQL Server, Redis, NLP Python), os administradores do sistema precisavam de um painel de controle (Health Check) consolidado para verificar em tempo real o status operacional dos nós e métricas básicas de uso.
+
+## Decisão
+Implementamos a rota `/api/telemetria/status` no .NET 10. Esta rota executa ativamente um diagnóstico dinâmico do consumo de memória (`System.Diagnostics.Process.GetCurrentProcess().WorkingSet64`), testes de pino em conexões SQL (`SELECT 1`), métricas brutas (contagem de franquias) e verificação do último timestamp inserido pelo Scraper Worker.
+No Angular, uma interface gráfica foi incorporada ao layout (`/telemetria`) contendo `setInterval` autogerenciado no ciclo de vida do componente (`ngOnInit` / `ngOnDestroy`) que atualiza via HTTP Long-Polling a cada 10 segundos, injetando os dados em `Signals` para reatividade imediata no DOM.
+
+## Consequências
+- **Positivas:** Visibilidade imediata sobre o ecossistema. Prevenção proativa a quedas invisíveis de Workers.
+- **Negativas:** Consultas a cada 10 segundos ao SQL (`SELECT COUNT(*)`) e ping addicional.

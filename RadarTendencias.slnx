@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="api/RadarTendencias.Api.csproj" />
+  <Project Path="worker/RadarTendencias.Worker.csproj" />
+</Solution>

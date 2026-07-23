@@ -1,0 +1,20 @@
+---
+title: ADR - Relatórios Executivos em Excel
+description: Architecture Decision Record sobre a adoção da biblioteca ClosedXML para geração de arquivos .xlsx.
+---
+
+# Architecture Decision Record: Relatórios Executivos em Excel
+
+## Status
+Aceito
+
+## Contexto
+Para facilitar a exportação de dados analíticos brutos (Visão de Mercado e Hype) para outros sistemas corporativos ou auditorias off-line, existia a exigência de baixar esses consolidadores na extensão nativa de planilhas.
+
+## Decisão
+Adotou-se o pacote NuGet `ClosedXML` por sua interoperabilidade direta com a especificação OpenXML. O .NET processa no lado do servidor as informações usando funções de janela complexas via banco (`ROW_NUMBER() OVER(PARTITION BY...)`) no Dapper para captar apenas os perfis mais atualizados de cada mídia (Impacto Comercial e Hype), escreve fisicamente a planilha em memória (`XLWorkbook`) colorizando o Header, e retorna como byte/Stream (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet). 
+No Client-Side Angular, a requisição pede formatado no `responseType: blob` e fabrica a API HTML nativa (DOM `<a>`) atrelada ao URL dinâmico para despachar o download fisicamente no navegador do usuário.
+
+## Consequências
+- **Positivas:** Documentos altamente portáveis. Processamento totalmente isolado da UI.
+- **Negativas:** Alto consumo transiente de memória (RAM) no servidor Kestrel ao gerar o arquivo caso a consulta cresça para milhões de registros (MemoryStream sem paginação).

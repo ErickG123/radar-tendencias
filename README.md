@@ -45,10 +45,11 @@ Através da integração com múltiplas fontes (Reddit, YouTube, Jikan/MAL, TMDB
 
 O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 
-- **API Core (.NET 10):** Minimal API de altíssima performance estruturada com **CQRS (MediatR)** e `Dapper` utilizando *Vertical Slice Architecture*. Responsável por orquestrar dados ao Frontend, gerenciar banco de dados e realizar buscas externas.
-- **Worker Service (.NET 10):** Job em background estruturado com **CQRS** responsável por sincronizar avaliações das comunidades externas, acionar o pipeline NLP e gravar o Resumo IA gerado em cada ciclo.
-- **NLP Service (Python):** Microsserviço construído com `FastAPI` e `transformers`. Executa análises de sentimento multilinguais localmente, com fallback automático para `distilbert` caso o modelo principal não carregue.
-- **Frontend App (Angular 21):** Aplicação Single Page fluida usando `Standalone Components`, `Signals` e lazy-loading, consumindo a API e exibindo gráficos analíticos ricos.
+- **API Core (.NET 10):** Minimal API de altíssima performance reestruturada sob os preceitos de **Vertical Slice Architecture** e **CQRS (MediatR)**. Injeções limpas via métodos de extensão. Adotou-se o Dapper para acesso otimizado aos dados e JWT para Autenticação/Multi-Tenancy.
+- **Worker Service (.NET 10):** Job em background em **CQRS** responsável por sincronizar avaliações, acionar pipelines de ML e monitorar o Hype.
+- **NLP Service (Python):** Microsserviço de Processamento de Linguagem Natural com FastAPI (`cardiffnlp/twitter-xlm-roberta-base-sentiment`), varrendo sentimentos multilinguais.
+- **LLM Service (Python):** Microsserviço recém-adicionado de IA Generativa Local rodando o modelo **Qwen 2.5 (1.5B)**. Encarregado de analisar entidades (Nuvem de Palavras) e produzir insights executivos avançados sobre cada franquia.
+- **Frontend App (Angular 21):** Aplicação fluida usando **Feature-Based Architecture**. Consome a API, adota 100% de reatividade moderna (Signals, `toSignal`, RxJS Interop) prevenindo memory leaks e renderiza componentes standalone estilizados de modo escalável e validado globalmente por um ecosistema de ESLint e Prettier.
 
 ## ✨ Features Principais
 
@@ -56,7 +57,7 @@ O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 |---|---|
 | 🔍 **Busca Universal** | Unifica resultados de Animes (Jikan/MAL), Mangás, Filmes e Séries (TMDB), segregados por fonte com fallback AniList GraphQL |
 | 🧠 **Análise de Sentimento (IA)** | Pipeline NLP local (Hugging Face) varrendo Reddit, MAL, TMDB, YouTube e Threads AniList |
-| 🤖 **Resumo Executivo IA (Slang-Aware)** | Geração automática de resumo contextualizado por tom de sentimento a cada ciclo do Worker |
+| 🤖 **Resumo Executivo Generativo** | Motor local de IA (Qwen 2.5 1.5B) que consolida a Nuvem de Palavras, o Hype e o Sentimento em um insight executivo natural |
 | 📈 **Hype Score Histórico** | Gráfico temporal de popularidade por franquia com variação de engajamento |
 | 📅 **Análise Sazonal** | Dashboard de temporadas identificando Blockbusters vs. Joias Ocultas via AniList |
 | 🗓 **Calendário Semanal** | Grade de lançamentos semanais com episódios e estúdios via AniList `airingSchedules` |
@@ -68,16 +69,22 @@ O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 | ⚙️ **Motor de Regras (Flow)** | Interface arrastar-e-soltar para criar automações (Ex: Se Hype > 80, dispare notificação) |
 | 🏭 **Streaming Providers & Estúdios** | Tabelas `StreamingProviders` e `Estudios` para persistir dados de onde assistir |
 | 🛡️ **NLP Resiliente** | Fallback automático de modelo (`distilbert`) caso `sentencepiece`/XLM-RoBERTa falhe no boot |
+| ☁️ **Nuvem de Palavras** | Extração IA de entidades e tópicos chaves das comunidades, colorizados por sentimento |
+| 📊 **Telemetria (Health Check)** | Painel de monitoramento do Worker, Redis, Memória API e SQL Server |
+| 🚨 **Triggers e Alertas** | Motor de customização de alertas proativos com disparos condicionais (Hype > X) |
+| 📑 **Relatórios em Excel** | Exportação analítica estruturada de mercado processada server-side via ClosedXML |
+| 🛡️ **Segurança e JWT** | Endpoints resguardados, guards robustos no Angular e sistema de Autenticação/Multi-Tenancy robusto. |
+| 📐 **Padrões de Engenharia** | Kebab-case root folders, Husky pré-commits (lint-staged), .editorconfig C# nativo e ESLint Flat. |
 
 ## 🛠 Tecnologias
 
 | Camada | Tecnologias |
 |---|---|
-| **Backend** | C# 13, .NET 10 Minimal APIs, **MediatR (CQRS)**, Dapper, DbUp, SQL Server 2022 |
+| **Backend** | C# 13, .NET 10 Minimal APIs, **MediatR (CQRS)**, Dapper, DbUp, SQL Server 2022, ClosedXML |
 | **Worker** | .NET 10 Background Service, **MediatR**, IHttpClientFactory, PeriodicTimer |
-| **Frontend** | Angular 21, SCSS, PrimeNG Icons, Chart.js |
-| **IA / NLP** | Python 3.11, FastAPI, Hugging Face Transformers, Torch, SentencePiece |
-| **Infraestrutura** | Docker, Docker Compose, Nginx |
+| **Frontend** | Angular 21, SCSS, PrimeNG Icons, Chart.js, Signals, RxJS Interop, ESLint Flat Config, Prettier |
+| **IA / NLP / LLM** | Python 3.11, FastAPI, Transformers, Torch, SentencePiece, Hugging Face (Qwen 2.5, XLM-RoBERTa) |
+| **Infraestrutura** | Docker, Docker Compose, Nginx, Redis |
 | **Integrações** | Jikan (MAL), AniList GraphQL, TMDB, Reddit JSON API, YouTube Data API v3 |
 
 ## 📡 Endpoints da API
@@ -93,6 +100,7 @@ O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 | `GET` | `/franquias/{id}/comparativo-regional` | Global vs. Brasil (AniList + redes sociais) |
 | `GET` | `/franquias/{id}/streaming` | Provedores de streaming da franquia |
 | `GET` | `/franquias/{id}/estudios` | Estúdios responsáveis pela franquia |
+| `GET` | `/franquias/{id}/palavras-chave` | Obter array JSON da nuvem de palavras |
 | `GET` | `/temporadas/analise` | Animes por temporada (AniList GraphQL) |
 | `GET` | `/calendario/semana` | Grade de lançamentos semanal (AniList) |
 | `GET` | `/pesquisa?q={termo}` | Busca multi-fonte com fallback AniList |
@@ -105,6 +113,11 @@ O sistema adota uma abordagem de microsserviços rodando em containers Docker:
 | `DELETE` | `/notificacoes/{id}` | Remove notificação |
 | `GET` | `/fluxos` | Lista motor de regras |
 | `POST` | `/fluxos` | Cria/atualiza fluxo de regras |
+| `GET` | `/telemetria/status` | Monitoramento e Health Check do ecosistema |
+| `GET` | `/alertas` | Lista alertas de usuário configurados |
+| `POST` | `/alertas` | Cria novo alerta condicional |
+| `DELETE` | `/alertas/{id}` | Apaga um alerta ativo |
+| `GET` | `/relatorios/mercado/excel` | Retorna o relátório Excel (`blob` / `.xlsx`) |
 
 ## 🚀 Como Executar
 
@@ -119,7 +132,7 @@ cd radar-tendencias
 ```
 
 ### 2. Configurar as Chaves de API
-**`RadarTendencias.Worker/appsettings.json`** e **`RadarTendencias.Api/appsettings.json`**:
+**`worker/appsettings.json`** e **`api/appsettings.json`**:
 ```json
 {
   "TmdbApiKey": "SUA_CHAVE_TMDB",
@@ -139,7 +152,8 @@ docker-compose up -d --build
 |---|---|---|
 | **Frontend App** | `http://localhost:4200` | Interface visual do usuário |
 | **API (.NET)** | `http://localhost:8080` | Core API |
-| **NLP (Python)** | `http://localhost:5000` | Microsserviço de IA |
+| **NLP (Python)** | `http://localhost:5000` | Microsserviço NLP Analítico |
+| **LLM (Python)** | `http://localhost:5001` | Microsserviço de IA Generativa (Qwen 2.5) |
 | **Banco de Dados** | `localhost,14333` | SQL Server (`sa` / `Radar@Db2026!`) |
 
 ---
