@@ -12,6 +12,7 @@ using ClosedXML.Excel;
 using Dapper;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Distributed;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using RadarTendencias.Api.Features.DTOs;
@@ -137,7 +138,7 @@ app.MapDelete("/notificacoes/{id}", async (IMediator mediator, [AsParameters] De
 app.MapGet("/franquias/{id}/comparativo-regional", async (IMediator mediator, [AsParameters] GetFranquiasIdComparativoRegionalQuery request) => await mediator.Send(request));
 app.MapGet("/franquias/{id}/streaming", async (IMediator mediator, [AsParameters] GetFranquiasIdStreamingQuery request) => await mediator.Send(request));
 app.MapGet("/franquias/{id}/estudios", async (IMediator mediator, [AsParameters] GetFranquiasIdEstudiosQuery request) => await mediator.Send(request));
-app.MapGet("/calendario/semana", async (IMediator mediator) => await mediator.Send(new GetCalendarioSemanaQuery()));
+app.MapGet("/api/calendario/semana", async (IMediator mediator) => await mediator.Send(new GetCalendarioSemanaQuery()));
 app.MapGet("/temporadas/analise", async (IMediator mediator, [AsParameters] GetTemporadasAnaliseQuery request) => await mediator.Send(request));
 app.MapGet("/franquias/{id}/relacoes", async (IMediator mediator, [AsParameters] GetFranquiasIdRelacoesQuery request) => await mediator.Send(request));
 
@@ -146,18 +147,35 @@ using (var scope4 = app.Services.CreateScope())
     var config = scope4.ServiceProvider.GetRequiredService<IConfiguration>();
     using (var connection = new SqlConnection(config.GetConnectionString("DefaultConnection")))
     {
-        var sql = @"
+        var sqlSentimento = @"
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'EpisodiosSentimento')
             BEGIN
                 CREATE TABLE EpisodiosSentimento (
-                    EpisodioID INT IDENTITY(1,1) PRIMARY KEY,
+                    EpisodioID BIGINT IDENTITY(1,1) PRIMARY KEY,
                     FranquiaID INT NOT NULL FOREIGN KEY REFERENCES Franquias(FranquiaID) ON DELETE CASCADE,
-                    NumeroEpisodio INT NOT NULL,
-                    SentimentoScore DECIMAL(5,2) NOT NULL,
-                    DataExibicao DATETIME NOT NULL
+                    Temporada INT NOT NULL,
+                    Episodio INT NOT NULL,
+                    DataExibicao DATETIME,
+                    NotaPublico DECIMAL(3,1),
+                    SentimentoAnalise DECIMAL(5,2),
+                    CONSTRAINT UQ_Episodio UNIQUE (FranquiaID, Temporada, Episodio)
                 );
             END";
-        await connection.ExecuteAsync(sql);
+        await connection.ExecuteAsync(sqlSentimento);
+
+        var sqlImpacto = @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ImpactoComercial')
+            BEGIN
+                CREATE TABLE ImpactoComercial (
+                    ImpactoID BIGINT IDENTITY(1,1) PRIMARY KEY,
+                    FranquiaID INT NOT NULL FOREIGN KEY REFERENCES Franquias(FranquiaID) ON DELETE CASCADE,
+                    VolumeProdutosAmazon INT DEFAULT 0,
+                    VolumeColecionaveis INT DEFAULT 0,
+                    PrecoMedio DECIMAL(10,2) DEFAULT 0,
+                    DataAtualizacao DATETIME NOT NULL DEFAULT GETDATE()
+                );
+            END";
+        await connection.ExecuteAsync(sqlImpacto);
     }
 }
 
@@ -225,29 +243,44 @@ app.MapGet("/api/franquias/{id}/palavras-chave", async (int id, IConfiguration c
     return Results.Content(result, "application/json");
 });
 
-app.MapGet("/api/telemetria/status", async (IConfiguration config) =>
+app.MapGet("/api/telemetria/status", async (IConfiguration config, [Microsoft.AspNetCore.Mvc.FromServices] Microsoft.Extensions.Caching.Distributed.IDistributedCache cache) =>
 {
-    var telemetry = new TelemetryResponse
-    {
-        ApiStatus = "Online",
-        MemoriaUsadaMb = Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024)
-    };
+    int totalFranquias = 0;
+    string dbStatus = "Offline";
+    DateTime? ultimaSinc = null;
     
     try 
     {
         using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
-        await connection.ExecuteAsync("SELECT 1");
-        telemetry.DatabaseStatus = "Online";
-        
-        telemetry.TotalFranquiasMonitoradas = await connection.QuerySingleOrDefaultAsync<int>("SELECT COUNT(*) FROM Franquias");
-        telemetry.UltimaSincronizacaoWorker = await connection.QuerySingleOrDefaultAsync<DateTime?>("SELECT TOP 1 DataMedicao FROM MonitoramentoHype ORDER BY DataMedicao DESC");
+        totalFranquias = await connection.QuerySingleOrDefaultAsync<int>("SELECT COUNT(*) FROM Franquias");
+        ultimaSinc = await connection.QuerySingleOrDefaultAsync<DateTime?>("SELECT TOP 1 DataMedicao FROM MonitoramentoHype ORDER BY DataMedicao DESC");
+        dbStatus = "Online";
     } 
     catch 
     {
-        telemetry.DatabaseStatus = "Offline";
+        dbStatus = "Offline";
+        totalFranquias = 0;
     }
 
-    return Results.Ok(telemetry);
+    string redisStatus = "Offline";
+    try 
+    {
+        await cache.SetStringAsync("dummy_telemetria", "1", new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10) });
+        redisStatus = "Online";
+    }
+    catch
+    {
+        redisStatus = "Offline";
+    }
+
+    return Results.Ok(new {
+        apiStatus = "Online",
+        memoriaUsadaMb = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024),
+        databaseStatus = dbStatus,
+        totalFranquiasMonitoradas = totalFranquias,
+        redisStatus = redisStatus,
+        ultimaSincronizacaoWorker = ultimaSinc
+    });
 });
 
 using (var scope6 = app.Services.CreateScope())
@@ -269,6 +302,59 @@ using (var scope6 = app.Services.CreateScope())
                 );
             END";
         await connection.ExecuteAsync(sql);
+
+        var sqlProgramacao = @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ProgramacaoSemanal')
+            BEGIN
+                CREATE TABLE ProgramacaoSemanal (
+                    ProgramacaoID INT IDENTITY(1,1) PRIMARY KEY,
+                    FranquiaID INT NOT NULL FOREIGN KEY REFERENCES Franquias(FranquiaID) ON DELETE CASCADE,
+                    DiaSemana INT NOT NULL, 
+                    HorarioEmissao TIME NOT NULL, 
+                    EpisodioAtual VARCHAR(50) NULL
+                );
+            END";
+        await connection.ExecuteAsync(sqlProgramacao);
+
+        var sqlConfiguracoes = @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ConfiguracoesWorker')
+            BEGIN
+                CREATE TABLE ConfiguracoesWorker (
+                    Id INT PRIMARY KEY,
+                    ScraperHabilitado BIT NOT NULL,
+                    IntervaloBaseMinutos INT NOT NULL,
+                    ModoTurboHabilitado BIT NOT NULL,
+                    IntervaloPromocionalMinutos INT NOT NULL,
+                    ForcarExecucao BIT NOT NULL DEFAULT 0
+                );
+            END
+            ELSE
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'ConfiguracoesWorker') AND name = 'ForcarExecucao')
+                BEGIN
+                    ALTER TABLE ConfiguracoesWorker ADD ForcarExecucao BIT NOT NULL DEFAULT 0;
+                END
+            END";
+        await connection.ExecuteAsync(sqlConfiguracoes);
+        
+        var sqlWorkerLogs = @"
+            IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'WorkerLogs')
+            BEGIN
+                CREATE TABLE WorkerLogs (
+                    LogID INT IDENTITY(1,1) PRIMARY KEY,
+                    DataExecucao DATETIME NOT NULL,
+                    Status VARCHAR(50) NOT NULL,
+                    ItensProcessados INT NOT NULL DEFAULT 0,
+                    MensagemErro NVARCHAR(MAX) NULL,
+                    DetalhesJson NVARCHAR(MAX) NULL
+                );
+            END
+            ELSE
+            BEGIN
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'WorkerLogs') AND name = 'DetalhesJson')
+                    ALTER TABLE WorkerLogs ADD DetalhesJson NVARCHAR(MAX) NULL;
+            END";
+        await connection.ExecuteAsync(sqlWorkerLogs);
         
         var sqlUsuarios = @"
             IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'Usuarios')
@@ -417,6 +503,94 @@ app.MapPost("/api/auth/login", async (LoginCommand command, IConfiguration confi
     return Results.Ok(new { Token = tokenHandler.WriteToken(token), Usuario = new { user.UsuarioID, user.Nome, user.Email } });
 });
 
+app.MapGet("/api/workers/logs", async (IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sql = "SELECT TOP 50 LogID, DataExecucao, Status, ItensProcessados, MensagemErro, DetalhesJson FROM WorkerLogs ORDER BY DataExecucao DESC";
+    var result = await connection.QueryAsync<WorkerLogDto>(sql);
+    
+    var mappedResult = result.Select(r => new {
+        logID = r.LogID,
+        dataExecucao = r.DataExecucao,
+        status = r.Status,
+        itensProcessados = r.ItensProcessados,
+        mensagemErro = r.MensagemErro,
+        detalhesJson = r.DetalhesJson
+    });
+    
+    return Results.Ok(mappedResult);
+});
+
+app.MapPost("/api/workers/trigger", async (IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    
+    // Sinaliza o Worker para acordar imediatamente
+    var sql = "UPDATE ConfiguracoesWorker SET ForcarExecucao = 1 WHERE Id = 1";
+    await connection.ExecuteAsync(sql);
+    
+    return Results.Ok(new { message = "Worker acionado com sucesso" });
+});
+
+app.MapGet("/api/workers/config", async (IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    var sql = "SELECT ScraperHabilitado, IntervaloBaseMinutos, ModoTurboHabilitado, IntervaloPromocionalMinutos FROM ConfiguracoesWorker WHERE Id = 1";
+    var result = await connection.QuerySingleOrDefaultAsync<ConfiguracoesWorkerDto>(sql);
+    
+    if (result == null)
+    {
+        return Results.Ok(new { 
+            scraperHabilitado = false, 
+            intervaloBaseMinutos = 240, 
+            modoTurboHabilitado = false, 
+            intervaloPromocionalMinutos = 0 
+        });
+    }
+    
+    return Results.Ok(new {
+        scraperHabilitado = result.ScraperHabilitado,
+        intervaloBaseMinutos = result.IntervaloBaseMinutos,
+        modoTurboHabilitado = result.ModoTurboHabilitado,
+        intervaloPromocionalMinutos = result.IntervaloPromocionalMinutos
+    });
+});
+
+app.MapPost("/api/workers/config", async (ConfiguracoesWorkerDto dto, IConfiguration config) =>
+{
+    using var connection = new SqlConnection(config.GetConnectionString("DefaultConnection"));
+    await connection.OpenAsync();
+    using var transaction = connection.BeginTransaction();
+    
+    try
+    {
+        var sqlUpsert = @"
+            IF EXISTS (SELECT 1 FROM ConfiguracoesWorker WHERE Id = 1)
+            BEGIN
+                UPDATE ConfiguracoesWorker 
+                SET ScraperHabilitado = @ScraperHabilitado, 
+                    IntervaloBaseMinutos = @IntervaloBaseMinutos, 
+                    ModoTurboHabilitado = @ModoTurboHabilitado, 
+                    IntervaloPromocionalMinutos = @IntervaloPromocionalMinutos
+                WHERE Id = 1;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO ConfiguracoesWorker (Id, ScraperHabilitado, IntervaloBaseMinutos, ModoTurboHabilitado, IntervaloPromocionalMinutos)
+                VALUES (1, @ScraperHabilitado, @IntervaloBaseMinutos, @ModoTurboHabilitado, @IntervaloPromocionalMinutos);
+            END";
+            
+        await connection.ExecuteAsync(sqlUpsert, dto, transaction);
+        transaction.Commit();
+        return Results.Ok();
+    }
+    catch
+    {
+        transaction.Rollback();
+        throw;
+    }
+});
+
 app.MapFranquiasEndpoints();
 
 app.Run();
@@ -434,3 +608,5 @@ public class TelemetryResponse
 public record CriarAlertaCommand(int FranquiaID, string TipoMetrica, string Condicao, decimal ValorAlvo);
 public record RegistrarCommand(string Nome, string Email, string Senha);
 public record LoginCommand(string Email, string Senha);
+public record ConfiguracoesWorkerDto(bool ScraperHabilitado, int IntervaloBaseMinutos, bool ModoTurboHabilitado, int IntervaloPromocionalMinutos);
+public record WorkerLogDto(int LogID, DateTime DataExecucao, string Status, int ItensProcessados, string MensagemErro, string DetalhesJson);

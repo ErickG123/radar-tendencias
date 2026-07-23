@@ -1,0 +1,73 @@
+<aside class="sidebar" [class.collapsed]="layoutService.isSidebarCollapsed()">
+  <div class="sidebar-header">
+    <div class="logo-box">RT</div>
+    <span class="logo-text" *ngIf="!layoutService.isSidebarCollapsed()">Radar de Tendências</span>
+  </div>
+  
+  <nav class="sidebar-nav">
+    <div class="nav-section-title" *ngIf="!layoutService.isSidebarCollapsed()">Visões</div>
+    <a routerLink="/dashboard" [queryParams]="{}" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item" title="Dashboard Geral">
+      <i class="pi pi-home"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Visão Geral</span>
+    </a>
+    <a routerLink="/animes" routerLinkActive="active" class="nav-item" title="Ranking de Animes (BSR)">
+      <i class="pi pi-bolt"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Ranking de Animes</span>
+    </a>
+    <a routerLink="/dashboard" [queryParams]="{ category: 2 }" routerLinkActive="active" class="nav-item" title="Filmes e Séries">
+      <i class="pi pi-video"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Filmes e Séries</span>
+    </a>
+    <a routerLink="/temporadas" routerLinkActive="active" class="nav-item" title="Temporadas">
+      <i class="pi pi-calendar"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Temporadas</span>
+    </a>
+    <a routerLink="/watchlist" routerLinkActive="active" class="nav-item" title="Minha Watchlist">
+      <i class="pi pi-bookmark"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Minha Watchlist</span>
+    </a>
+    <a routerLink="/calendario" routerLinkActive="active" class="nav-item" title="Calendário Semanal">
+      <i class="pi pi-calendar-clock"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Calendário Semanal</span>
+    </a>
+    <a routerLink="/notificacoes" routerLinkActive="active" class="nav-item" title="Central de Alertas">
+      <i class="pi pi-bell"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Central de Alertas</span>
+    </a>
+
+    <div class="nav-section-title" *ngIf="!layoutService.isSidebarCollapsed()" style="margin-top: 1rem;">Descobertas</div>
+    <a routerLink="/discovery" routerLinkActive="active" class="nav-item" title="Smart Discovery">
+      <i class="pi pi-compass"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Smart Discovery</span>
+    </a>
+    <a routerLink="/comparador" routerLinkActive="active" class="nav-item" title="Comparador VS">
+      <i class="pi pi-clone"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Comparador VS</span>
+    </a>
+
+    <div class="nav-section-title" *ngIf="!layoutService.isSidebarCollapsed()" style="margin-top: 1rem;">Configurações</div>
+    <a routerLink="/fluxos" routerLinkActive="active" class="nav-item" title="Motor de Regras">
+      <i class="pi pi-sitemap"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Motor de Regras</span>
+    </a>
+    <a routerLink="/configuracoes" routerLinkActive="active" class="nav-item" title="Painel de Controle">
+      <i class="pi pi-cog"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Painel de Controle</span>
+    </a>
+    <a routerLink="/telemetria" routerLinkActive="active" class="nav-item" title="Observabilidade">
+      <i class="pi pi-server"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Observabilidade</span>
+    </a>
+    <a routerLink="/alertas" routerLinkActive="active" class="nav-item" title="Meus Alertas">
+      <i class="pi pi-bell"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">Meus Alertas</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="theme-toggle" (click)="layoutService.toggleTheme()" [title]="layoutService.isDarkMode() ? 'Ativar Light Mode' : 'Ativar Dark Mode'">
+      <i class="pi" [ngClass]="layoutService.isDarkMode() ? 'pi-sun' : 'pi-moon'"></i>
+      <span *ngIf="!layoutService.isSidebarCollapsed()">{{ layoutService.isDarkMode() ? 'Light Mode' : 'Dark Mode' }}</span>
+    </button>
+  </div>
+</aside>

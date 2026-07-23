@@ -59,7 +59,7 @@
     <span class="status-badge">{{ comparativoRegional().StatusComparativo }}</span>
   </div>
 
-  <div class="characters-section" *ngIf="personagens().length > 0; else semPersonagens">
+  <div class="characters-section" *ngIf="(personagens()?.length || 0) > 0; else semPersonagens">
     <h3 class="section-title">Personagens Populares</h3>
     <div class="characters-grid">
       <div class="character-card" *ngFor="let char of personagens()">
@@ -83,7 +83,7 @@
     </div>
   </ng-template>
 
-  <div class="reddit-section" *ngIf="feedbacksComunidade().length > 0; else semComunidade">
+  <div class="reddit-section" *ngIf="(feedbacksComunidade()?.length || 0) > 0; else semComunidade">
     <div class="section-header">
       <i class="pi pi-comments text-primary" style="font-size: 1.5rem;"></i>
       <h3 class="section-title" style="margin: 0;">Voz da Comunidade</h3>
@@ -117,7 +117,7 @@
     </div>
     <p class="section-desc">Plataformas disponíveis no Brasil para esta obra.</p>
 
-    <div class="streaming-grid" *ngIf="streamingProviders().length > 0; else semStreaming">
+    <div class="streaming-grid" *ngIf="(streamingProviders()?.length || 0) > 0; else semStreaming">
       <div *ngFor="let p of streamingProviders()" class="provider-card">
         <img [src]="p.LogoUrl" [alt]="p.NomeProvider" class="provider-logo" *ngIf="p.LogoUrl; else logoFallback" />
         <ng-template #logoFallback>

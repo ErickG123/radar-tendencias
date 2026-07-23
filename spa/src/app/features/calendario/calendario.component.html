@@ -2,7 +2,7 @@
   <div class="header-secao">
     <div>
       <h2>Grade de Lançamentos da Semana</h2>
-      <p>Acompanhe em tempo real a data, horário e estúdio responsável pelos próximos episódios.</p>
+      <p>Acompanhe em tempo real a data, horário e os próximos episódios das suas franquias favoritas.</p>
     </div>
     <button class="btn-refresh" (click)="carregarAgenda()" [disabled]="isCarregando()" title="Atualizar grade">
       <i class="pi" [class.pi-refresh]="!isCarregando()" [class.pi-spin]="isCarregando()" [class.pi-spinner]="isCarregando()"></i>
@@ -14,27 +14,38 @@
     <p>Sincronizando grade de episódios...</p>
   </div>
 
-  <div class="calendario-grid" *ngIf="!isCarregando() && agenda().length > 0">
-    <div *ngFor="let item of agenda()" class="calendario-card">
-      <img [src]="item.ImagemUrl" [alt]="item.Nome" *ngIf="item.ImagemUrl; else noImg" class="card-poster" />
-      <ng-template #noImg>
-        <div class="no-img"><i class="pi pi-image"></i></div>
-      </ng-template>
-      <div class="card-info">
-        <span class="estudio-tag">{{ item.Estudio }}</span>
-        <h4>{{ item.Nome }}</h4>
-        <span class="episodio-info">Episódio {{ item.Episodio }}</span>
-        <span class="data-hora">
-          <i class="pi pi-clock"></i>
-          {{ item.DataHora | date:'dd/MM/yyyy HH:mm' }}
-        </span>
-      </div>
-    </div>
+  <div class="error-state" *ngIf="hasError() && !isCarregando()">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>Ops, ocorreu um problema</h3>
+    <p>Não foi possível carregar a grade de horários no momento.</p>
   </div>
 
-  <div class="empty-state" *ngIf="!isCarregando() && agenda().length === 0">
+  <div class="calendario-dias" *ngIf="!isCarregando() && !hasError() && agendaAgrupada().length > 0">
+    @for (dia of agendaAgrupada(); track dia.nomeDia) {
+      <div class="dia-secao">
+        <h3 class="dia-titulo">{{ dia.nomeDia }}</h3>
+        <div class="calendario-grid">
+          @for (item of dia.itens; track item.nome) {
+            <div class="calendario-card">
+              <div class="card-info">
+                <span class="estudio-tag" [ngClass]="item.categoria.toLowerCase()">{{ item.categoria }}</span>
+                <h4>{{ item.nome }}</h4>
+                <span class="episodio-info" *ngIf="item.episodio">Episódio {{ item.episodio }}</span>
+                <span class="data-hora">
+                  <i class="pi pi-clock"></i>
+                  {{ item.horario }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="empty-state" *ngIf="!isCarregando() && !hasError() && agendaAgrupada().length === 0">
     <i class="pi pi-calendar-times"></i>
     <h3>Nenhum lançamento programado</h3>
-    <p>Não foi possível carregar a grade de horários no momento.</p>
+    <p>Não há episódios para a semana atual.</p>
   </div>
 </div>

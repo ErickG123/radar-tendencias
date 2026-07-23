@@ -2,12 +2,11 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-temporadas',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './temporadas.component.html',
   styleUrls: ['./temporadas.component.scss']
 })
@@ -28,8 +27,8 @@ export class TemporadasComponent implements OnInit {
   animes = signal<any[]>([]);
   isCarregando = signal<boolean>(false);
 
-  blockbusters = computed(() => this.animes().filter(a => a.StatusPopularidade === 'Blockbuster' || a.StatusPopularidade === 'Popular'));
-  joiasOcultas = computed(() => this.animes().filter(a => a.StatusPopularidade === 'Nicho / Underground'));
+  blockbusters = computed(() => this.animes().filter(a => a.EhBlockbuster === true));
+  joiasOcultas = computed(() => this.animes().filter(a => a.EhBlockbuster === false));
 
   ngOnInit() {
     this.carregarDadosTemporada();

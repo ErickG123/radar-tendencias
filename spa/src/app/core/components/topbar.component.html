@@ -1,0 +1,43 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="menu-btn" (click)="layoutService.toggleSidebar()">
+      <i class="pi pi-bars"></i>
+    </button>
+    <div class="search-bar">
+      <i class="pi pi-search"></i>
+      <input type="text" placeholder="Pesquisar (Enter para buscar)..." #searchInput (keyup.enter)="buscarFranquia(searchInput.value)" />
+    </div>
+  </div>
+  
+  <div class="topbar-actions">
+    <div class="notification-wrapper">
+      <button class="bell-btn" (click)="toggleNotifications()">
+        <i class="pi pi-bell"></i>
+        <span class="badge" *ngIf="unreadCount() > 0">{{ unreadCount() }}</span>
+      </button>
+      
+      <div class="notification-panel" *ngIf="isNotificationsOpen()">
+        <div class="panel-header">
+          <h4>Notificações Recentes</h4>
+        </div>
+        <div class="panel-body">
+          <div class="alert-item" *ngFor="let alerta of alertas()" [ngClass]="{'unread': !alerta.Lido}" (click)="marcarComoLido(alerta)">
+            <div class="alert-icon"><i class="pi pi-exclamation-triangle"></i></div>
+            <div class="alert-content">
+              <p [style.color]="alerta.Lido ? 'var(--text-secondary)' : 'var(--text-color)'">{{ alerta.Mensagem }}</p>
+              <span class="alert-date">{{ alerta.DataAlerta | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="unread-dot" *ngIf="!alerta.Lido"></div>
+          </div>
+          <div class="empty-alerts" *ngIf="alertas().length === 0">
+            Nenhum alerta engatilhado.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="user-profile">
+      <div class="avatar">U</div>
+    </div>
+  </div>
+</header>

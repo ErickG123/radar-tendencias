@@ -35,6 +35,7 @@ builder.Services.AddHttpClient("RedditClient", client =>
 builder.Services.AddSingleton<IAnaliseService, AnaliseService>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
+builder.Services.AddSingleton<RadarTendencias.Worker.Jobs.AmazonScraperJob>();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

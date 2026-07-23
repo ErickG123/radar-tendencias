@@ -15,7 +15,7 @@ export class SignalRService {
       .withAutomaticReconnect()
       .build();
 
-    this.hubConnection.start().catch(err => console.error(err));
+    this.hubConnection.start().catch((err: any) => console.error(err));
 
     this.hubConnection.on('OnWorkerSyncComplete', (data: any) => {
       this.ultimaAtualizacao.set(data);

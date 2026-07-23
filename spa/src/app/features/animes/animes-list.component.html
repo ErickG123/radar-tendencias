@@ -1,0 +1,64 @@
+<div class="animes-list-container">
+  <div class="header">
+    <h2>Top Animes & Mangás</h2>
+    <div class="search-box">
+      <i class="pi pi-search"></i>
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar por nome..." />
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading()">
+    <i class="pi pi-spin pi-spinner" style="font-size: 2.5rem"></i>
+    <p>Carregando ranking...</p>
+  </div>
+
+  <div class="table-container" *ngIf="!isLoading()">
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>Posição (BSR)</th>
+          <th>Nome / Franquia</th>
+          <th>Categoria</th>
+          <th>Hype Score</th>
+          <th>Sentimento</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of franquiasFiltradas(); let i = index">
+          <td>
+            <span class="bsr-badge" [class.top-1]="i === 0" [class.top-3]="i > 0 && i < 3">
+              #{{ i + 1 }}
+            </span>
+          </td>
+          <td class="name-col">
+            <div class="franchise-name">{{ f.nome }}</div>
+            <div class="bsr-info">Volume: {{ f.bsrPosition | number }} itens</div>
+          </td>
+          <td>
+            <span class="category-badge" [ngClass]="f.categoria.toLowerCase()">{{ f.categoria }}</span>
+          </td>
+          <td>
+            <div class="score-bar">
+              <div class="fill" [style.width.%]="f.hypeScore"></div>
+            </div>
+            <span class="score-value">{{ f.hypeScore | number:'1.0-0' }}</span>
+          </td>
+          <td>
+            <span class="sentiment-badge" [ngClass]="f.sentimentoPositivo > 0.6 ? 'good' : (f.sentimentoPositivo > 0.4 ? 'neutral' : 'bad')">
+              {{ (f.sentimentoPositivo * 100) | number:'1.0-0' }}%
+            </span>
+          </td>
+          <td>
+            <a [routerLink]="['/franquia', f.franquiaId]" class="btn-details">
+              Ver Detalhes
+            </a>
+          </td>
+        </tr>
+        <tr *ngIf="franquiasFiltradas().length === 0">
+          <td colspan="6" class="empty-state">Nenhuma franquia encontrada.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

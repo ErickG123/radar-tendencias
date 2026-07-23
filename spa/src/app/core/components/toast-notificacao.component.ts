@@ -1,6 +1,6 @@
 import { Component, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SignalRService } from '../../services/signalr.service';
+import { SignalRService } from '../services/signalr.service';
 
 @Component({
   selector: 'app-toast-notificacao',

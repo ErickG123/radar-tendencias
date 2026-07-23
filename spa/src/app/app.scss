@@ -67,3 +67,7 @@
   width: 100%;
   font-family: inherit;
 }
+
+app-sidebar, app-topbar {
+  display: contents;
+}

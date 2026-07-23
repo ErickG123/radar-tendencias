@@ -17,36 +17,29 @@ public class GetCalendarioSemanaHandler : IRequestHandler<GetCalendarioSemanaQue
 {
 
 
-    public GetCalendarioSemanaHandler()
-    {
+    private readonly IConfiguration _config;
 
+    public GetCalendarioSemanaHandler(IConfiguration config)
+    {
+        _config = config;
     }
 
     public async Task<IResult> Handle(GetCalendarioSemanaQuery request, CancellationToken cancellationToken)
     {
-
-    using var client = new HttpClient();
-    client.BaseAddress = new Uri("https://graphql.anilist.co");
-    
-    var queryGraphql = new {
-        query = @"query { Page(perPage: 20) { airingSchedules(sort: [TIME_ASC]) { airingAt episode media { id title { romaji english } coverImage { large } studios(isMain: true) { nodes { name } } } } } }"
-    };
-
-    var response = await client.PostAsJsonAsync("", queryGraphql);
-    if (!response.IsSuccessStatusCode) return Results.Ok(new List<object>());
-
-    var result = await response.Content.ReadFromJsonAsync<AnilistScheduleResponse>();
-    if (result?.Data?.Page?.AiringSchedules == null) return Results.Ok(new List<object>());
-
-    var lista = result.Data.Page.AiringSchedules.Select(s => new {
-        DataHora = DateTimeOffset.FromUnixTimeSeconds(s.AiringAt).LocalDateTime,
-        Episodio = s.Episode,
-        Nome = s.Media?.Title?.English ?? s.Media?.Title?.Romaji ?? "Desconhecido",
-        ImagemUrl = s.Media?.CoverImage?.Large,
-        Estudio = s.Media?.Studios?.Nodes?.FirstOrDefault()?.Name ?? "Independente"
-    }).ToList();
-
-    return Results.Ok(lista);
-
+        using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
+        var sql = @"
+            SELECT 
+                f.Nome as nome, 
+                c.Nome as categoria, 
+                p.DiaSemana as diaSemana, 
+                p.HorarioEmissao as horario, 
+                p.EpisodioAtual as episodio
+            FROM ProgramacaoSemanal p
+            INNER JOIN Franquias f ON p.FranquiaID = f.FranquiaID
+            INNER JOIN Categorias c ON f.CategoriaID = c.CategoriaID
+            ORDER BY p.DiaSemana ASC, p.HorarioEmissao ASC
+        ";
+        var resultados = await connection.QueryAsync<dynamic>(sql);
+        return Results.Ok(resultados);
     }
 }

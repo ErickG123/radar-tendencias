@@ -1,0 +1,205 @@
+.animes-list-container {
+  padding: 2rem;
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    h2 {
+      margin: 0;
+      color: var(--header-color);
+      font-size: 1.5rem;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      width: 300px;
+
+      i {
+        color: var(--text-secondary);
+        margin-right: 0.75rem;
+      }
+
+      input {
+        border: none;
+        background: transparent;
+        outline: none;
+        color: var(--text-color);
+        width: 100%;
+        font-family: inherit;
+      }
+    }
+  }
+
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    color: var(--text-secondary);
+    
+    p {
+      margin-top: 1rem;
+    }
+  }
+
+  .table-container {
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    
+    th, td {
+      padding: 1rem 1.5rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(128, 128, 128, 0.05);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background-color: rgba(128, 128, 128, 0.05);
+      }
+    }
+
+    .position-cell {
+      width: 80px;
+      
+      .position-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-weight: 600;
+        font-size: 0.9rem;
+        
+        &.top-3 {
+          background-color: var(--primary-color);
+          color: white;
+        }
+      }
+    }
+
+    .name-cell {
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .category-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background-color: var(--bg-color);
+      color: var(--text-secondary);
+
+      &.anime {
+        background-color: rgba(37, 99, 235, 0.1);
+        color: #3b82f6;
+      }
+      &.mangá, &.manga {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+      }
+    }
+
+    .progress-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 150px;
+      
+      .progress-bar {
+        height: 8px;
+        background-color: var(--primary-color);
+        border-radius: 4px;
+        position: relative;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: var(--border-color);
+          z-index: -1;
+          border-radius: 4px;
+          min-width: 100px;
+        }
+      }
+      
+      .progress-text {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+    }
+
+    .sentiment-indicator {
+      font-weight: 600;
+      font-size: 0.9rem;
+      
+      &.positive { color: #10b981; }
+      &.neutral { color: #f59e0b; }
+      &.negative { color: #ef4444; }
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background-color: var(--bg-color);
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: var(--primary-color);
+        color: white;
+      }
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 3rem;
+    }
+  }
+}

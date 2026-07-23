@@ -38,6 +38,7 @@
     "@angular/forms": "^21.2.0",
     "@angular/platform-browser": "^21.2.0",
     "@angular/router": "^21.2.0",
+    "@microsoft/signalr": "^10.0.0",
     "chart.js": "^4.5.1",
     "primeicons": "^8.0.0",
     "primeng": "^22.0.0",

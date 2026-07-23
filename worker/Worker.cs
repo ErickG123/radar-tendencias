@@ -1,75 +1,126 @@
-using MediatR;
-using RadarTendencias.Worker.Features.Comandos;
 using Microsoft.Data.SqlClient;
 using Dapper;
-using System.Net.Http.Json;
+using RadarTendencias.Worker.Jobs;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 
 namespace RadarTendencias.Worker;
 
 public class Worker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly AmazonScraperJob _amazonScraper;
+    private readonly IConfiguration _configuration;
 
-    public Worker(IServiceProvider serviceProvider)
+    public Worker(IServiceProvider serviceProvider, AmazonScraperJob amazonScraper, IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
+        _amazonScraper = amazonScraper;
+        _configuration = configuration;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            int delayMinutes = 240; 
-            
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-                using var connection = new SqlConnection(configuration.GetConnectionString("DefaultConnection"));
-                
-                var configQuery = "SELECT TOP 1 * FROM ConfiguracoesWorker ORDER BY ConfiguracaoID DESC";
+                using var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+                var configQuery = "SELECT TOP 1 * FROM ConfiguracoesWorker WHERE Id = 1";
                 var workerConfig = await connection.QuerySingleOrDefaultAsync<WorkerConfigDto>(configQuery);
 
-                if (workerConfig != null)
+                if (workerConfig == null || (!workerConfig.ScraperHabilitado && !workerConfig.ForcarExecucao))
                 {
-                    if (!workerConfig.AmazonScraperAtivo)
-                    {
-                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-                        continue;
-                    }
-
-                    delayMinutes = workerConfig.ModoPromocaoAtivo ? workerConfig.IntervaloPromocaoMinutos : workerConfig.IntervaloBaseMinutos;
+                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    continue;
                 }
 
-                var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new ProcessarJikanCommand(), stoppingToken);
-                await mediator.Send(new ProcessarTmdbCommand(), stoppingToken);
+                var itensExtraidos = await _amazonScraper.ExtrairRankingMangasAsync();
+
+                if (itensExtraidos.Any())
+                {
+                    foreach (var item in itensExtraidos)
+                    {
+                        var franquiaId = await connection.QuerySingleOrDefaultAsync<int?>(
+                            "SELECT FranquiaID FROM Franquias WHERE Nome = @Nome", new { Nome = item.Titulo });
+
+                        if (!franquiaId.HasValue)
+                        {
+                            franquiaId = await connection.QuerySingleAsync<int>(
+                                "INSERT INTO Franquias (Nome, CategoriaID, Ativo, DataCriacao) OUTPUT INSERTED.FranquiaID VALUES (@Nome, 1, 1, GETDATE())",
+                                new { Nome = item.Titulo });
+                        }
+
+                        // Converter posição BSR em Score invertido (quanto menor a posição, maior o HypeScore 1-100)
+                        decimal hypeScore = item.PosicaoRanking > 0 && item.PosicaoRanking <= 100 
+                            ? 100m - (item.PosicaoRanking - 1) 
+                            : 10m;
+
+                        await connection.ExecuteAsync(
+                            "INSERT INTO MonitoramentoHype (FranquiaID, HypeScore, VolumeMencoes, SentimentoPositivo, DataMedicao) VALUES (@Id, @Score, 100, 1.0, GETDATE())",
+                            new { Id = franquiaId.Value, Score = hypeScore });
+
+                        // Atualiza VolumeProdutosAmazon de forma análoga à posição (apenas ilustrativo pro painel)
+                        var volumeSimulado = (100 - item.PosicaoRanking) * 100;
+                        if (volumeSimulado < 0) volumeSimulado = 0;
+                            
+                        if (await connection.ExecuteAsync("UPDATE ImpactoComercial SET VolumeProdutosAmazon = @Vol, DataAtualizacao = GETDATE() WHERE FranquiaID = @Id", new { Vol = volumeSimulado, Id = franquiaId.Value }) == 0)
+                        {
+                            await connection.ExecuteAsync(
+                                "INSERT INTO ImpactoComercial (FranquiaID, VolumeProdutosAmazon, VolumeColecionaveis, PrecoMedio, DataAtualizacao) VALUES (@Id, @Vol, 0, 0, GETDATE())",
+                                new { Id = franquiaId.Value, Vol = volumeSimulado });
+                        }
+                    }
+
+                    var jsonDetalhes = JsonSerializer.Serialize(itensExtraidos);
+                    await connection.ExecuteAsync(
+                        "INSERT INTO WorkerLogs (DataExecucao, Status, ItensProcessados, MensagemErro, DetalhesJson) VALUES (@Data, 'Sucesso', @Qtd, 'Extração Playwright Amazon BSR.', @Detalhes)",
+                        new { Data = DateTime.UtcNow, Qtd = itensExtraidos.Count, Detalhes = jsonDetalhes });
+                }
+                else
+                {
+                    await connection.ExecuteAsync(
+                        "INSERT INTO WorkerLogs (DataExecucao, Status, ItensProcessados, MensagemErro) VALUES (@Data, 'Erro', 0, 'Nenhum item extraído da Amazon.')",
+                        new { Data = DateTime.UtcNow });
+                }
+                
+                if (workerConfig.ForcarExecucao)
+                {
+                    await connection.ExecuteAsync("UPDATE ConfiguracoesWorker SET ForcarExecucao = 0 WHERE Id = 1");
+                }
+
+                var endTime = DateTime.UtcNow.AddMinutes(workerConfig.IntervaloBaseMinutos);
+                while (DateTime.UtcNow < endTime && !stoppingToken.IsCancellationRequested)
+                {
+                    var flag = await connection.QuerySingleOrDefaultAsync<bool>("SELECT ISNULL(ForcarExecucao, 0) FROM ConfiguracoesWorker WHERE Id = 1");
+                    if (flag) break;
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                delayMinutes = 60;
+                try
+                {
+                    using var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                    await connection.ExecuteAsync(
+                        "INSERT INTO WorkerLogs (DataExecucao, Status, ItensProcessados, MensagemErro) VALUES (@Data, 'Erro', 0, @Erro)",
+                        new { Data = DateTime.UtcNow, Erro = ex.Message });
+                }
+                catch { }
+
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
-
-            await Task.Delay(TimeSpan.FromMinutes(delayMinutes), stoppingToken);
         }
-    }
-
-    private async Task NotificarApiAsync(int franquiaId, string nomeFranquia, string tipoAtualizacao)
-    {
-        try
-        {
-            using var httpClient = new HttpClient();
-            var payload = new { FranquiaId = franquiaId, NomeFranquia = nomeFranquia, TipoAtualizacao = tipoAtualizacao };
-            await httpClient.PostAsJsonAsync("http://localhost:8080/api/webhooks/worker-sync", payload);
-        }
-        catch { }
     }
 
     public class WorkerConfigDto
     {
-        public bool AmazonScraperAtivo { get; set; }
+        public bool ScraperHabilitado { get; set; }
         public int IntervaloBaseMinutos { get; set; }
-        public bool ModoPromocaoAtivo { get; set; }
-        public int IntervaloPromocaoMinutos { get; set; }
+        public bool ForcarExecucao { get; set; }
     }
 }

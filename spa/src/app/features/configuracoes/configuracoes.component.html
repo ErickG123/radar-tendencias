@@ -1,7 +1,14 @@
 <div class="config-wrapper">
-  <div class="header-secao">
-    <h2>Control Plane: Workers & Scrapers</h2>
-    <p>Gerencie a cadência de extração de dados e o comportamento dos processos em background.</p>
+  <div class="header-secao" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2>Control Plane: Workers & Scrapers</h2>
+      <p>Gerencie a cadência de extração de dados e o comportamento dos processos em background.</p>
+    </div>
+    <button class="btn-save" (click)="forcarExecucao()" [disabled]="isTriggering()" style="background-color: #0ea5e9;">
+      <i class="pi pi-play" *ngIf="!isTriggering()"></i>
+      <i class="pi pi-spin pi-spinner" *ngIf="isTriggering()"></i>
+      {{ isTriggering() ? 'Executando...' : 'Forçar Execução Agora' }}
+    </button>
   </div>
 
   <div class="config-card">
@@ -13,7 +20,7 @@
     <div class="form-grid">
       <div class="form-group toggle-group">
         <label class="switch">
-          <input type="checkbox" [(ngModel)]="config().amazonScraperAtivo">
+          <input type="checkbox" [ngModel]="scraperHabilitado()" (ngModelChange)="scraperHabilitado.set($event)">
           <span class="slider round"></span>
         </label>
         <div class="toggle-info">
@@ -23,8 +30,8 @@
       </div>
 
       <div class="form-group">
-        <label>Intervalo Base (Minutos): {{ config().intervaloBaseMinutos }}m</label>
-        <input type="range" min="60" max="1440" step="30" [(ngModel)]="config().intervaloBaseMinutos" [disabled]="!config().amazonScraperAtivo">
+        <label>Intervalo Base (Minutos): {{ intervaloBase() }}m</label>
+        <input type="range" min="60" max="1440" step="30" [ngModel]="intervaloBase()" (ngModelChange)="intervaloBase.set($event)" [disabled]="!scraperHabilitado()">
         <span class="helper-text">Padrão em semanas comuns (Recomendado: 240m a 480m).</span>
       </div>
 
@@ -32,7 +39,7 @@
 
       <div class="form-group toggle-group promo-mode">
         <label class="switch">
-          <input type="checkbox" [(ngModel)]="config().modoPromocaoAtivo" [disabled]="!config().amazonScraperAtivo">
+          <input type="checkbox" [ngModel]="modoTurboHabilitado()" (ngModelChange)="modoTurboHabilitado.set($event)" [disabled]="!scraperHabilitado()">
           <span class="slider round promo"></span>
         </label>
         <div class="toggle-info">
@@ -41,20 +48,98 @@
         </div>
       </div>
 
-      <div class="form-group" [class.disabled]="!config().modoPromocaoAtivo || !config().amazonScraperAtivo">
-        <label>Intervalo Promocional (Minutos): {{ config().intervaloPromocaoMinutos }}m</label>
-        <input type="range" min="15" max="120" step="15" [(ngModel)]="config().intervaloPromocaoMinutos" [disabled]="!config().modoPromocaoAtivo || !config().amazonScraperAtivo">
+      <div class="form-group" [class.disabled]="!modoTurboHabilitado() || !scraperHabilitado()">
+        <label>Intervalo Promocional (Minutos): {{ intervaloPromocional() }}m</label>
+        <input type="range" min="15" max="120" step="15" [ngModel]="intervaloPromocional()" (ngModelChange)="intervaloPromocional.set($event)" [disabled]="!modoTurboHabilitado() || !scraperHabilitado()">
         <span class="helper-text">Cadência agressiva para captura de preços voláteis.</span>
       </div>
     </div>
 
     <div class="action-footer">
       <span class="feedback-msg" [class.success]="saveMessage().includes('sucesso')">{{ saveMessage() }}</span>
-      <button class="btn-save" (click)="salvarConfiguracoes()" [disabled]="isSaving()">
+      <button class="btn-save" (click)="aplicarConfiguracoes()" [disabled]="isSaving()">
         <i class="pi pi-check" *ngIf="!isSaving()"></i>
         <i class="pi pi-spin pi-spinner" *ngIf="isSaving()"></i>
         {{ isSaving() ? 'Aplicando...' : 'Aplicar Configurações' }}
       </button>
+    </div>
+  </div>
+
+  <div class="config-card logs-card">
+    <div class="card-header">
+      <i class="pi pi-list"></i>
+      <h3>Histórico de Execuções do Scraper</h3>
+      <button class="btn-refresh" (click)="carregarLogs()" [disabled]="isLoadingLogs()">
+        <i class="pi pi-refresh" [class.pi-spin]="isLoadingLogs()"></i>
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table class="logs-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Status</th>
+            <th>Itens Processados</th>
+            <th>Detalhes</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of workerLogs(); track log.logID) {
+            <tr>
+              <td>{{ log.dataExecucao | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+              <td>
+                <span class="badge" [ngClass]="log.status === 'Sucesso' ? 'sucesso' : 'erro'">
+                  {{ log.status ? log.status : 'Desconhecido' }}
+                </span>
+              </td>
+              <td>{{ log.itensProcessados }}</td>
+              <td class="details-col">
+                {{ log.mensagemErro || '-' }}
+                <button class="btn-detalhes" *ngIf="log.detalhesJson" (click)="openDetails(log)">
+                  <i class="pi pi-list"></i> Ver Itens
+                </button>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr>
+              <td colspan="4" class="empty-state">
+                Nenhuma execução registrada no histórico.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal de Detalhes -->
+  <div class="modal-overlay" *ngIf="selectedLogDetails() !== null" (click)="closeDetails()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Detalhes do Processamento</h3>
+        <button class="btn-close" (click)="closeDetails()"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Título da Franquia</th>
+              <th>BSR Position Extraído</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedLogDetails()">
+              <td style="color: var(--text-color);">{{ item.Titulo }}</td>
+              <td style="color: var(--text-color);">#{{ item.PosicaoRanking }}</td>
+            </tr>
+            <tr *ngIf="selectedLogDetails()?.length === 0">
+              <td colspan="2" class="empty-state">Nenhum dado extraído retornado no JSON.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

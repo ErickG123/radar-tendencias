@@ -23,6 +23,10 @@ export class AuthService {
     );
   }
 
+  registrar(dados: any) {
+    return this.http.post('http://localhost:8080/api/auth/registrar', dados);
+  }
+
   logout() {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');

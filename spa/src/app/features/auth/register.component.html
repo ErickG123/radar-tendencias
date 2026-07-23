@@ -1,0 +1,35 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo-area">
+      <i class="pi pi-user-plus"></i>
+      <h2>Criar Conta</h2>
+    </div>
+    
+    <div class="form-group">
+      <label>Nome Completo</label>
+      <input type="text" [(ngModel)]="nome" class="input-dark" placeholder="Seu nome">
+    </div>
+
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" [(ngModel)]="email" class="input-dark" placeholder="seu@email.com">
+    </div>
+
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" [(ngModel)]="senha" class="input-dark" placeholder="••••••••">
+    </div>
+
+    <span class="error-msg" *ngIf="erro()" style="color: #ff5252; font-size: 0.85rem; display: block; margin-bottom: 1rem; text-align: center;">{{ erro() }}</span>
+    <span class="success-msg" *ngIf="sucesso()" style="color: #4CAF50; font-size: 0.85rem; display: block; margin-bottom: 1rem; text-align: center;">{{ sucesso() }}</span>
+
+    <button class="btn-login" (click)="fazerCadastro()" [disabled]="isCarregando()">
+      <i class="pi pi-spin pi-spinner" *ngIf="isCarregando()"></i>
+      {{ isCarregando() ? 'Cadastrando...' : 'Cadastrar' }}
+    </button>
+    
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem;">
+      <a routerLink="/login" style="color: var(--primary-color); text-decoration: none;">Já tem uma conta? Faça Login</a>
+    </div>
+  </div>
+</div>
